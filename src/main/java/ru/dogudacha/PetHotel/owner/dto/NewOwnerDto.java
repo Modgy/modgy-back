@@ -1,6 +1,8 @@
 package ru.dogudacha.PetHotel.owner.dto;
 
+import ch.qos.logback.classic.pattern.MethodOfCallerConverter;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -13,10 +15,12 @@ import ru.dogudacha.PetHotel.owner.model.MethodsOfCommunication;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdateOwnerDto {
+public class NewOwnerDto {
+    @NotBlank(message = "Field: name. Error: must not be blank.")
     @Size(min = 2, max = 250, message = "validation name size error")
     private String name;
     @Email(message = "Field: email. Error: must be email format.")
+    @NotBlank(message = "Field: email. Error: must not be blank.")
     @Size(min = 6, max = 254, message = "validation email size error")
     private String email;
     @Pattern(regexp = "^((8|\\+7)[\\- ]?)?(\\(?\\d{3}\\)?[\\- ]?)?[\\d\\- ]{7,10}$",
@@ -65,12 +69,7 @@ public class UpdateOwnerDto {
     private String viber;
     private String vk;
     private MethodsOfCommunication preferCommunication;
-    @Pattern(regexp = "(([АВЕКМНОРСТУХ]\\d{3}[АВЕКМНОРСТУХ]{1,2})(\\d{2,3})|" +
-            "(\\d{4}[АВЕКМНОРСТУХ]{2})(\\d{2})|(\\d{3}C?D{1,2}\\d{3})(\\d{2})|" +
-            "([АВЕКМНОРСТУХ]{2}\\d{3}[АВЕКМНОРСТУХ])(\\d{2})|" +
-            "([АВЕКМНОРСТУХ]\\d{4})(\\d{2})|" +
-            "(\\d{3}[АВЕКМНОРСТУХ])(\\d{2})|" +
-            "(\\d{4}[АВЕКМНОРСТУХ])(\\d{2}))",
+    @Pattern(regexp = "^[АВЕКМНОРСТУХ]\\d{3}(?<!000)[АВЕКМНОРСТУХ]{2}\\d{2,3}$",
             message = "Field: carRegistrationNumber. Error: wrong carRegistrationNumber format.")
     private String carRegistrationNumber;
 }
