@@ -1,6 +1,5 @@
-package ru.dogudacha.PetHotel.room.dto;
+package ru.dogudacha.PetHotel.room.category.dto;
 
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -12,13 +11,10 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdateRoomDto {
-    @Size(max = 100)
+public class UpdateCategoryDto {
+    @Size(min = 1, max = 20)
     @Pattern(regexp = "^(?=.*[a-zA-Z\\d_\\S]).+$")
-    private String number;
-    @Min(value = 0, message = "Field: area. Error: must not be negative.")
-    private Double area;
-    private Long categoryId;
+    private String name;
     @Size(max = 250)
     private String description;
 }
