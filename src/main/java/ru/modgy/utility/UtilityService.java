@@ -1,22 +1,23 @@
-package ru.dogudacha.PetHotel.utility;
+package ru.modgy.utility;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.dogudacha.PetHotel.booking.model.Booking;
-import ru.dogudacha.PetHotel.booking.repository.BookingRepository;
-import ru.dogudacha.PetHotel.exception.AccessDeniedException;
-import ru.dogudacha.PetHotel.exception.ConflictException;
-import ru.dogudacha.PetHotel.exception.NotFoundException;
-import ru.dogudacha.PetHotel.pet.model.Pet;
-import ru.dogudacha.PetHotel.pet.repository.PetRepository;
-import ru.dogudacha.PetHotel.room.category.model.Category;
-import ru.dogudacha.PetHotel.room.category.repository.CategoryRepository;
-import ru.dogudacha.PetHotel.room.model.Room;
-import ru.dogudacha.PetHotel.room.repository.RoomRepository;
-import ru.dogudacha.PetHotel.user.model.Roles;
-import ru.dogudacha.PetHotel.user.model.User;
-import ru.dogudacha.PetHotel.user.repository.UserRepository;
+import ru.modgy.booking.model.Booking;
+import ru.modgy.booking.repository.BookingRepository;
+import ru.modgy.exception.AccessDeniedException;
+import ru.modgy.exception.ConflictException;
+import ru.modgy.exception.NotFoundException;
+import ru.modgy.pet.model.Pet;
+import ru.modgy.pet.repository.PetRepository;
+import ru.modgy.room.category.model.Category;
+import ru.modgy.room.category.repository.CategoryRepository;
+import ru.modgy.room.model.Room;
+import ru.modgy.room.repository.RoomRepository;
+import ru.modgy.user.model.Roles;
+import ru.modgy.user.model.User;
+import ru.modgy.user.repository.UserRepository;
+
 
 import java.util.List;
 
@@ -48,12 +49,12 @@ public class UtilityService {
 
     public Pet getPetIfExists(Long petId) {
         return petRepository.findById(petId).orElseThrow(() ->
-                new NotFoundException(String.format("Pet with id = %d not found", petId)));
+                new NotFoundException(String.format("Pet with id=%d is not found", petId)));
     }
 
     public Booking getBookingIfExists(Long bookingId) {
         return bookingRepository.findById(bookingId).orElseThrow(() ->
-                new NotFoundException(String.format("Booking with id = %d not found", bookingId)));
+                new NotFoundException(String.format("Booking with id=%d is not found", bookingId)));
     }
 
     public List<Pet> getListOfPetsByIds(List<Long> petIds) {
@@ -64,12 +65,7 @@ public class UtilityService {
     //Проверка пользователя на роль BOSS или ADMIN, иначе AccessDeniedException
     public void checkBossAdminAccess(Long userId) {
         User user = getUserIfExists(userId);
-        if (user.getRole().ordinal() >= 2) {
-            throw new AccessDeniedException(String.format("User with role=%s, can't access for this action",
-                    user.getRole()));
-        } else {
-            return;
-        }
+        checkBossAdminAccess(user);
     }
 
     public void checkBossAdminAccess(User user) {
@@ -82,11 +78,7 @@ public class UtilityService {
     //Проверка пользователя на роль BOSS или ADMIN или FINANCIAL, иначе AccessDeniedException
     public void checkBossAdminFinancialAccess(Long userId) {
         User user = getUserIfExists(userId);
-
-        if (user.getRole().ordinal() == 2) {
-            throw new AccessDeniedException(String.format("User with role=%s, can't access for this action",
-                    user.getRole()));
-        }
+        checkBossAdminFinancialAccess(user);
     }
 
     public void checkBossAdminFinancialAccess(User user) {
@@ -123,15 +115,7 @@ public class UtilityService {
 
     public void checkHigherOrdinalRoleAccess(Long requesterId, Roles role) {
         User requester = getUserIfExists(requesterId);
-
-        if (requester.getRole().ordinal() < 2 &&
-                (role == null ||
-                        (requester.getRole().ordinal() < role.ordinal()))
-        ) {
-            return;
-        }
-        throw new AccessDeniedException(String.format("User with role=%s, can't access for this action",
-                requester.getRole()));
+        checkHigherOrdinalRoleAccess(requester, role);
     }
 
     /*Проверка пользователя на роль BOSS или ADMIN и сравнение со второй ролью (ожидается,
@@ -159,12 +143,6 @@ public class UtilityService {
 
     public void checkHigherOrEqualOrdinalRoleAccess(Long requesterId, Roles role) {
         User requester = getUserIfExists(requesterId);
-
-        if (requester.getRole().ordinal() < 2 &&
-                requester.getRole().ordinal() <= role.ordinal()) {
-            return;
-        }
-        throw new AccessDeniedException(String.format("User with role=%s, can't access for this action",
-                requester.getRole()));
+        checkHigherOrEqualOrdinalRoleAccess(requester, role);
     }
 }
