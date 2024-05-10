@@ -37,11 +37,12 @@ Api: *<https://github.com/pymanceva/pet-hotel/blob/develop/Specification/pet-hot
 Карточка тип "Закрытие": *<https://nkiblyk.kaiten.ru/documents/d/7a1c8a2d-b776-45bc-adcf-0a7091b5a9bc>*
 API: *<https://github.com/pymanceva/pet-hotel/blob/add-bookings/Specification/pet-hotel-bookings-spec.yaml>*
 
+**0.0.9: Исправлена работа RoomMapper в части маппинга дочерней сущности Category.**
+Отредактирован RoomServiceImpl для работы с исправленным маппером.
+Карточка задачи: *<https://nkiblyk.kaiten.ru/space/167883/card/27548948?filter=eyJrZXkiOiJhbmQiLCJ2YWx1ZSI6W3sia2V5IjoiYW5kIiwidmFsdWUiOlt7ImNvbXBhcmlzb24iOiJlcSIsImtleSI6InRhZyIsInZhbHVlIjo0OTA5MDF9XX1dfQ>*
 
-**0.0.9: Исправлена работа RoomMapper в части маппинга дочерней сущности Category. **
-- Отредактирован RoomServiceImpl для работы с исправленным маппером. 
-Карточка задачи: https://nkiblyk.kaiten.ru/space/167883/card/27548948?filter=eyJrZXkiOiJhbmQiLCJ2YWx1ZSI6W3sia2V5IjoiYW5kIiwidmFsdWUiOlt7ImNvbXBhcmlzb24iOiJlcSIsImtleSI6InRhZyIsInZhbHVlIjo0OTA5MDF9XX1dfQ
-
-**0.0.10: Реализован поис питомцев по кличке**
-
+**0.0.10: Реализован поиск питомцев по кличке.**
 Карточка: https://docs.google.com/document/d/1l4dELV7vZi2YMXWBppTEneTQ0VyG9SCHWPlP2seWwZQ/edit?usp=drive_link
+
+**0.0.11: Добавлен UtilityService для получения сущностей всех типов и проверки прав доступа.**
+Карточка задачи: *<https://nkiblyk.kaiten.ru/space/167883/card/27549007?filter=eyJrZXkiOiJhbmQiLCJ2YWx1ZSI6W3sia2V5IjoiYW5kIiwidmFsdWUiOlt7ImNvbXBhcmlzb24iOiJlcSIsImtleSI6InRhZyIsInZhbHVlIjo0OTA5MDF9XX1dfQ>*
