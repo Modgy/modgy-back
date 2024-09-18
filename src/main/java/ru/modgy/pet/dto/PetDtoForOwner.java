@@ -2,15 +2,12 @@ package ru.modgy.pet.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
-import ru.modgy.owner.dto.OwnerShortDto;
-import ru.modgy.booking.dto.BookingForPetDto;
 import ru.modgy.pet.model.Sex;
 import ru.modgy.pet.model.TypeOfPet;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
-import java.util.List;
 
 @Getter
 @Setter
@@ -18,16 +15,14 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 @ToString
-public class PetDto {
+public class PetDtoForOwner {
     private long id;
-    private OwnerShortDto ownerShortDto;
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private TypeOfPet type; // вид животного
     private String name;
     private String breed; // порода
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd.MM.yyyy")
     private LocalDate birthDate;
-    private String age;
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Sex sex;
     private String color;
@@ -84,21 +79,19 @@ public class PetDto {
     private String additionalData;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd.MM.yyyy HH:mm:ss")
     private LocalDateTime registrationDate;
-    private List<BookingForPetDto> bookings;
+
+    public static final Comparator<PetDtoForOwner> PET_COMPARATOR =
+            Comparator.comparing((PetDtoForOwner::getName))
+                    .thenComparing((PetDtoForOwner::getType))
+                    .thenComparing((PetDtoForOwner::getBreed))
+                    .thenComparing((PetDtoForOwner::getRegistrationDate));
 
 
-    public static final Comparator<PetDto> PET_COMPARATOR =
-            Comparator.comparing((PetDto::getName))
-                    .thenComparing((PetDto::getType))
-                    .thenComparing((PetDto::getBreed))
-                    .thenComparing((PetDto::getRegistrationDate));
-
-
-    public static Comparator<PetDto> getComparator() {
+    public static Comparator<PetDtoForOwner> getComparator() {
         return PET_COMPARATOR;
     }
 
-    public int compareTo(PetDto other) {
+    public int compareTo(PetDtoForOwner other) {
         return this.name.compareTo(other.name);
     }
 
