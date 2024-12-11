@@ -1,0 +1,25 @@
+name: Build and Deploy to Test Server
+on:
+  push:
+    tags:
+      - v0.**
+
+jobs:
+
+  build-and-push-image:
+    name: Build and Publish Docker Image
+    uses: Modgy/modgy-ci-cd/.github/workflows/publish_docker_image.yml@main
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  deploy-to-test-server:
+    name: Update App on Test Server
+    uses: Modgy/modgy-ci-cd/.github/workflows/update_service.yml@main
+    secrets:
+      SERVER_HOST: ${{ secrets.SERVER_HOST }}
+      SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      SSH_PASSPHRASE: ${{ secrets.SSH_PASSPHRASE }}
+    with:
+      DOCKER_SERVICE: back
