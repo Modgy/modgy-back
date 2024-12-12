@@ -15,6 +15,7 @@ jobs:
 
   deploy-to-test-server:
     name: Update App on Test Server
+    needs: build-and-push-image
     uses: Modgy/modgy-ci-cd/.github/workflows/update_service.yml@main
     secrets:
       SERVER_HOST: ${{ secrets.SERVER_HOST }}
