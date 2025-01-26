@@ -1,16 +1,16 @@
 services:
-  server:
-    build: .
-    image: modgy/modgy-back:latest
-    container_name: pethotel_server
-    ports:
-      - "8080:8080"
-    restart: unless-stopped
-    env_file:
-      - .env
-    depends_on:
-      db:
-        condition: service_healthy
+#  server:
+#    build: .
+#    image: modgy/modgy-back:latest
+#    container_name: pethotel_server
+#    ports:
+#      - "8080:8080"
+#    restart: unless-stopped
+#    env_file:
+#      - .env
+#    depends_on:
+#      db:
+#        condition: service_healthy
 
 
   db:
@@ -28,6 +28,30 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak
+#    image: jboss/keycloak
+    container_name: keycloak
+    ports:
+      - "8484:8080"
+    env_file:
+      - .env
+
+    environment:
+      - JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8787
+#      DB_VENDOR: POSTGRES
+#      DB_ADDR:
+#      DB_DATABASE: keycloak_db
+#      DB_USER: ${POSTGRES_USER:-postgres}
+#      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    depends_on:
+      db:
+        condition: service_healthy
+#    links:
+#      - "postgres:postgres"
+    command:
+      - start-dev
 
 volumes:
   modgy_postgres_data:
