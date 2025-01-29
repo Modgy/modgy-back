@@ -93,3 +93,5 @@ Api: *<https://github.com/pymanceva/pet-hotel/blob/efed8fb9bbd026f8cab858a21672a
 Карточка задачи: *<https://nkiblyk.kaiten.ru/space/167883/card/36490897>*
 
 **0.0.23: Исправлен баг(чувствиетльноть к регистру) поиска по клиентам**
+
+**0.0.24: Добавлены миграции БД**
