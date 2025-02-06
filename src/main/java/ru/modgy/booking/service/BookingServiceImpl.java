@@ -21,6 +21,7 @@ import ru.modgy.pet.dto.PetDto;
 import ru.modgy.pet.model.Pet;
 import ru.modgy.room.model.Room;
 import ru.modgy.utility.EntityService;
+import ru.modgy.utility.StatusChangingConditions;
 import ru.modgy.utility.UtilityService;
 
 import java.time.LocalDate;
@@ -293,6 +294,23 @@ public class BookingServiceImpl implements BookingService {
         return bookingDtoList;
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public Map<StatusBooking, String> getAllAvailableStatusesWithConditions (Long userId, Long bookingId) {
+        Booking booking = entityService.getBookingIfExists(bookingId);
+        if (booking.getStatus().equals(StatusBooking.STATUS_INITIAL)) {
+            return getStatusesWithConditionsForInitialBooking(booking, LocalDate.now());
+        } else if (booking.getStatus().equals(StatusBooking.STATUS_CONFIRMED)) {
+            return getStatusesWithConditionsForConfirmedBooking(booking, LocalDate.now());
+        } else if (booking.getStatus().equals(StatusBooking.STATUS_CHECKED_IN)) {
+            return getStatusesWithConditionsForCheckedInBooking(booking, LocalDate.now());
+        } else if (booking.getStatus().equals(StatusBooking.STATUS_CHECKED_OUT)) {
+            return getStatusesWithConditionsForCheckedOutBooking(booking, LocalDate.now());
+        } else {
+            return getStatusesWithConditionsForCancelledBooking(booking, LocalDate.now());
+        }
+    }
+
     private List<Booking> findBookingsForRoomInDates(Long roomId, LocalDate checkInDate, LocalDate checkOutDate) {
         return bookingRepository.findBookingsForRoomInDates(
                         roomId, checkInDate, checkOutDate)
@@ -386,5 +404,109 @@ public class BookingServiceImpl implements BookingService {
             petDto.setOwnerShortDto(ownerMapper.toOwnerShortDto(owners.get(petDto.getId())));
         }
         return petsDto;
+    }
+
+    private Map<StatusBooking, String> getStatusesWithConditionsForInitialBooking(Booking booking, LocalDate today) {
+        HashMap<StatusBooking, String> result = new HashMap<>();
+        result.put(StatusBooking.STATUS_CONFIRMED, "");
+        result.put(StatusBooking.STATUS_CANCELLED, "");
+
+        if (booking.getCheckInDate().isBefore(today) && booking.getCheckOutDate().isBefore(today)) {
+            result.put(StatusBooking.STATUS_CHECKED_OUT, "");
+            return result;
+        } else if (booking.getCheckInDate().isAfter(today) && booking.getCheckOutDate().isAfter(today)) {
+            result.put(StatusBooking.STATUS_CHECKED_IN, StatusChangingConditions.CONDITION_TO_PUT_CHECKED_IN);
+            return result;
+        } else {
+            result.put(StatusBooking.STATUS_CHECKED_IN, "");
+            return result;
+        }
+    }
+
+    private Map<StatusBooking, String> getStatusesWithConditionsForConfirmedBooking(Booking booking, LocalDate today) {
+        HashMap<StatusBooking, String> result = new HashMap<>();
+        result.put(StatusBooking.STATUS_INITIAL, StatusChangingConditions.CONDITION_TO_PUT_INITIAL);
+        result.put(StatusBooking.STATUS_CANCELLED, "");
+
+        if (booking.getCheckInDate().isBefore(today) && booking.getCheckOutDate().isBefore(today)) {
+            result.put(StatusBooking.STATUS_CHECKED_OUT, "");
+            return result;
+        } else if (booking.getCheckInDate().isAfter(today) && booking.getCheckOutDate().isAfter(today)) {
+            result.put(StatusBooking.STATUS_CHECKED_IN, StatusChangingConditions.CONDITION_TO_PUT_CHECKED_IN);
+            return result;
+        } else {
+            result.put(StatusBooking.STATUS_CHECKED_IN, "");
+            return result;
+        }
+    }
+
+    private Map<StatusBooking, String> getStatusesWithConditionsForCheckedInBooking(Booking booking, LocalDate today) {
+        HashMap<StatusBooking, String> result = new HashMap<>();
+
+        if (booking.getCheckInDate().isBefore(today) && booking.getCheckOutDate().isBefore(today)) {
+            result.put(StatusBooking.STATUS_CHECKED_OUT, "");
+            result.put(StatusBooking.STATUS_CANCELLED, "");
+            return result;
+        } else if ((booking.getCheckInDate().isBefore(today) && booking.getCheckOutDate().isEqual(today)) ||
+                (booking.getCheckInDate().isEqual(today) && booking.getCheckOutDate().isEqual(today))) {
+            result.put(StatusBooking.STATUS_INITIAL, StatusChangingConditions.CONDITION_TO_PUT_INITIAL);
+            result.put(StatusBooking.STATUS_CONFIRMED, "");
+            result.put(StatusBooking.STATUS_CHECKED_OUT, "");
+            result.put(StatusBooking.STATUS_CANCELLED, "");
+            return result;
+        } else if (booking.getCheckInDate().isAfter(today) && booking.getCheckOutDate().isAfter(today)) {
+            return result;
+        }else {
+            result.put(StatusBooking.STATUS_INITIAL, StatusChangingConditions.CONDITION_TO_PUT_INITIAL);
+            result.put(StatusBooking.STATUS_CONFIRMED, "");
+            result.put(StatusBooking.STATUS_CHECKED_OUT, StatusChangingConditions.CONDITION_TO_PUT_CHECKED_OUT);
+            result.put(StatusBooking.STATUS_CANCELLED, "");
+            return result;
+        }
+    }
+
+    private Map<StatusBooking, String> getStatusesWithConditionsForCheckedOutBooking(Booking booking, LocalDate today) {
+        HashMap<StatusBooking, String> result = new HashMap<>();
+
+        if (booking.getCheckInDate().isBefore(today) && booking.getCheckOutDate().isBefore(today)) {
+            result.put(StatusBooking.STATUS_CANCELLED, "");
+            result.put(StatusBooking.STATUS_CHECKED_IN, StatusChangingConditions.CONDITION_TO_PUT_CHECKED_IN);
+            return result;
+        } else if ((booking.getCheckInDate().isBefore(today) && booking.getCheckOutDate().isEqual(today)) ||
+                (booking.getCheckInDate().isEqual(today) && booking.getCheckOutDate().isEqual(today))) {
+            result.put(StatusBooking.STATUS_CANCELLED, "");
+            result.put(StatusBooking.STATUS_CHECKED_IN, "");
+            return result;
+        } else {
+            return result;
+        }
+    }
+
+    private Map<StatusBooking, String> getStatusesWithConditionsForCancelledBooking(Booking booking, LocalDate today) {
+        HashMap<StatusBooking, String> result = new HashMap<>();
+
+        if (booking.getCheckInDate().isBefore(today) && booking.getCheckOutDate().isBefore(today)) {
+            result.put(StatusBooking.STATUS_CHECKED_OUT, StatusChangingConditions.CONDITION_TO_SWITCH_CANCELLED);
+            return result;
+        } else if ((booking.getCheckInDate().isBefore(today) && booking.getCheckOutDate().isEqual(today)) ||
+                (booking.getCheckInDate().isEqual(today) && booking.getCheckOutDate().isEqual(today))) {
+            result.put(StatusBooking.STATUS_INITIAL, StatusChangingConditions.CONDITION_TO_SWITCH_CANCELLED +
+                    StatusChangingConditions.CONDITION_TO_PUT_INITIAL);
+            result.put(StatusBooking.STATUS_CONFIRMED, StatusChangingConditions.CONDITION_TO_SWITCH_CANCELLED);
+            result.put(StatusBooking.STATUS_CHECKED_IN, StatusChangingConditions.CONDITION_TO_SWITCH_CANCELLED);
+            result.put(StatusBooking.STATUS_CHECKED_OUT, StatusChangingConditions.CONDITION_TO_SWITCH_CANCELLED);
+            return result;
+        } else if (booking.getCheckInDate().isAfter(today) && booking.getCheckOutDate().isAfter(today)) {
+            result.put(StatusBooking.STATUS_INITIAL, StatusChangingConditions.CONDITION_TO_SWITCH_CANCELLED +
+                    StatusChangingConditions.CONDITION_TO_PUT_INITIAL);
+            result.put(StatusBooking.STATUS_CONFIRMED, StatusChangingConditions.CONDITION_TO_SWITCH_CANCELLED);
+            return result;
+        }else {
+            result.put(StatusBooking.STATUS_INITIAL, StatusChangingConditions.CONDITION_TO_SWITCH_CANCELLED +
+                    StatusChangingConditions.CONDITION_TO_PUT_INITIAL);
+            result.put(StatusBooking.STATUS_CONFIRMED, StatusChangingConditions.CONDITION_TO_SWITCH_CANCELLED);
+            result.put(StatusBooking.STATUS_CHECKED_IN, StatusChangingConditions.CONDITION_TO_SWITCH_CANCELLED);
+            return result;
+        }
     }
 }

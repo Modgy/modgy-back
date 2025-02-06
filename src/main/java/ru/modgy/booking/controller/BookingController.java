@@ -9,11 +9,13 @@ import org.springframework.web.bind.annotation.*;
 import ru.modgy.booking.dto.BookingDto;
 import ru.modgy.booking.dto.NewBookingDto;
 import ru.modgy.booking.dto.UpdateBookingDto;
+import ru.modgy.booking.model.StatusBooking;
 import ru.modgy.booking.service.BookingService;
 import ru.modgy.utility.UtilityService;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @CrossOrigin
 @Slf4j
@@ -128,5 +130,14 @@ public class BookingController {
         log.info("BookingController: GET/findAllBookingsByOwner, requesterId={}, ownerId={}", requesterId, ownerId);
         utilityService.checkBossAdminAccess(requesterId);
         return bookingService.findAllBookingsByOwner(requesterId, ownerId);
+    }
+
+    @GetMapping("/{bookingId}/availableStatus")
+    public Map<StatusBooking, String> getAllAvailableStatusesWithConditions(@RequestHeader(UtilityService.REQUESTER_ID_HEADER) Long requesterId,
+                                                                            @PathVariable("bookingId") Long bookingId) {
+        log.info("BookingController: GET/getAllAvailableStatusesWithConditions, requesterId={}, bookingId={}",
+                requesterId, bookingId);
+        utilityService.checkBossAdminAccess(requesterId);
+        return bookingService.getAllAvailableStatusesWithConditions(requesterId, bookingId);
     }
 }
