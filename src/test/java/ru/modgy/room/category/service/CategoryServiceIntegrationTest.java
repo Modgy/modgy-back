@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @Transactional
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@SpringBootTest
+@SpringBootTest(properties = {"spring.liquibase.enabled=false"})
 @ActiveProfiles("test")
 class CategoryServiceIntegrationTest {
     final User requesterAdmin = User.builder()

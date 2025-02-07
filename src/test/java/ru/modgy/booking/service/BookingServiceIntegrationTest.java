@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Transactional
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@SpringBootTest
+@SpringBootTest(properties = {"spring.liquibase.enabled=false"})
 @ActiveProfiles("test")
 class BookingServiceIntegrationTest {
     private final LocalDate checkIn = LocalDate.of(2024, 1, 1);

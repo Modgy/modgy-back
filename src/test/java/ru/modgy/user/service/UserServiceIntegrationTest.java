@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Transactional
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@SpringBootTest
+@SpringBootTest(properties = {"spring.liquibase.enabled=false"})
 @ActiveProfiles("test")
 @Sql(scripts = "classpath:schema.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 public class UserServiceIntegrationTest {
