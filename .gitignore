@@ -38,3 +38,6 @@ checkstyle.xml
 
 ### secrets ###
 .env
+
+### jar ignore ###
+*.jar
