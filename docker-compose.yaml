@@ -14,7 +14,7 @@ services:
 
 
   db:
-    image: postgres:13.7-alpine
+    image: postgres:17-alpine3.20
     container_name: pethotel_db
     ports:
       - "6541:5432"
@@ -29,5 +29,19 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    container_name: minio
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - modgy_minio_data:/data
+    command: server /data --console-address ":9001"
+
 volumes:
   modgy_postgres_data:
+  modgy_minio_data:
