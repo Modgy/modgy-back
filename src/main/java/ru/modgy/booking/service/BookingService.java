@@ -7,7 +7,6 @@ import ru.modgy.booking.model.StatusBooking;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
 public interface BookingService {
     /**
@@ -124,11 +123,12 @@ public interface BookingService {
     List<BookingDto> findAllBookingsByOwner(Long userId, Long ownerId);
 
     /**
-     * Получение всех доступных для установки статусов для заданного бронирования и условий для установки.
+     * Получение всех доступных для установки статусов для заданного бронирования
+     * (в том числе тех, для которых требуется выполнение дополнительных условий).
      *
      * @param userId    - id пользователя, направляющего запрос
      * @param bookingId - id бронирования, для которого отбираются доступные статусы
      * @return HashMap, где ключ - допустимый к установке статус, значение - список необходимых для установки условий.
      */
-    Map<StatusBooking, String> getAllAvailableStatusesWithConditions(Long userId, Long bookingId);
+    List<StatusBooking> getAllAvailableStatusesWithConditions(Long userId, Long bookingId);
 }

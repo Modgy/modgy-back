@@ -306,8 +306,8 @@ paths:
     get:
       tags:
         - booking-controller
-      operationId: getAllAvailableStatusesWithConditions
-      description: Получение всех доступных статусов для бронирования, а также дополнительных условий для их установки. Доступно пользователям ROLE_BOSS и ROLE_ADMIN.
+      operationId: getAllAvailableStatuses
+      description: Получение всех доступных статусов для бронирования, в том числе тех, для которых требуется выполнение дополнительных условий. Доступно пользователям ROLE_BOSS и ROLE_ADMIN.
       summary: Получить все доступные для бронирования статусы
       parameters:
         - $ref: '#/components/parameters/requesterHeader'

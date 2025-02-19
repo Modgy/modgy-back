@@ -15,7 +15,6 @@ import ru.modgy.utility.UtilityService;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
 @CrossOrigin
 @Slf4j
@@ -133,7 +132,7 @@ public class BookingController {
     }
 
     @GetMapping("/{bookingId}/availableStatus")
-    public Map<StatusBooking, String> getAllAvailableStatusesWithConditions(@RequestHeader(UtilityService.REQUESTER_ID_HEADER) Long requesterId,
+    public List<StatusBooking> getAllAvailableStatuses(@RequestHeader(UtilityService.REQUESTER_ID_HEADER) Long requesterId,
                                                                             @PathVariable("bookingId") Long bookingId) {
         log.info("BookingController: GET/getAllAvailableStatusesWithConditions, requesterId={}, bookingId={}",
                 requesterId, bookingId);
