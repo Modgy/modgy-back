@@ -15,6 +15,7 @@ import ru.modgy.utility.UtilityService;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @CrossOrigin
 @Slf4j
@@ -67,9 +68,9 @@ public class BookingController {
 
     @GetMapping("/rooms/{roomId}/crossingBookingsOfRoomInDates")
     public List<BookingDto> findCrossingBookingsForRoomInDates(@RequestHeader(UtilityService.REQUESTER_ID_HEADER) Long requesterId,
-                                                       @PathVariable("roomId") Long roomId,
-                                                       @RequestParam("checkInDate") @DateTimeFormat(pattern = "dd.MM.yyyy") LocalDate checkInDate,
-                                                       @RequestParam("checkOutDate") @DateTimeFormat(pattern = "dd.MM.yyyy") LocalDate checkOutDate) {
+                                                               @PathVariable("roomId") Long roomId,
+                                                               @RequestParam("checkInDate") @DateTimeFormat(pattern = "dd.MM.yyyy") LocalDate checkInDate,
+                                                               @RequestParam("checkOutDate") @DateTimeFormat(pattern = "dd.MM.yyyy") LocalDate checkOutDate) {
         log.info("BookingController: GET/findBookingsForRoomInDates, requesterId={}, roomId={}", requesterId, roomId);
         utilityService.checkBossAdminAccess(requesterId);
         return bookingService.findCrossingBookingsForRoomInDates(requesterId, roomId, checkInDate, checkOutDate);
@@ -125,7 +126,7 @@ public class BookingController {
 
     @GetMapping("/allByOwner/owners/{ownerId}")
     public List<BookingDto> findAllBookingsByOwner(@RequestHeader(UtilityService.REQUESTER_ID_HEADER) Long requesterId,
-                                                 @PathVariable("ownerId") Long ownerId) {
+                                                   @PathVariable("ownerId") Long ownerId) {
         log.info("BookingController: GET/findAllBookingsByOwner, requesterId={}, ownerId={}", requesterId, ownerId);
         utilityService.checkBossAdminAccess(requesterId);
         return bookingService.findAllBookingsByOwner(requesterId, ownerId);
@@ -133,10 +134,11 @@ public class BookingController {
 
     @GetMapping("/{bookingId}/availableStatus")
     public List<StatusBooking> getAllAvailableStatuses(@RequestHeader(UtilityService.REQUESTER_ID_HEADER) Long requesterId,
-                                                                            @PathVariable("bookingId") Long bookingId) {
-        log.info("BookingController: GET/getAllAvailableStatusesWithConditions, requesterId={}, bookingId={}",
+                                                       @PathVariable("bookingId") Long bookingId,
+                                                       @RequestParam(value = "date", required = false) @DateTimeFormat(pattern = "dd.MM.yyyy") Optional<LocalDate> date) {
+        log.info("BookingController: GET/getAllAvailableStatuses, requesterId={}, bookingId={}",
                 requesterId, bookingId);
         utilityService.checkBossAdminAccess(requesterId);
-        return bookingService.getAllAvailableStatusesWithConditions(requesterId, bookingId);
+        return bookingService.getAllAvailableStatuses(requesterId, bookingId, date.orElseGet(LocalDate::now));
     }
 }

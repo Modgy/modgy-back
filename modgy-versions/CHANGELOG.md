@@ -96,5 +96,5 @@ Api: *<https://github.com/pymanceva/pet-hotel/blob/efed8fb9bbd026f8cab858a21672a
 
 **0.0.24: Добавлены миграции БД**
 
-**0.0.24: Добавлена выдача доступных статусов по id бронирования**
+**0.0.25: Добавлена выдача доступных статусов по id бронирования**
 Карточка задачи: *<https://nkiblyk.kaiten.ru/space/167883/boards/card/35887925?filter=eyJrZXkiOiJhbmQiLCJ2YWx1ZSI6W3sia2V5IjoiYW5kIiwidmFsdWUiOlt7ImNvbXBhcmlzb24iOiJlcSIsImtleSI6InRhZyIsInZhbHVlIjo0OTA5MDF9XX1dfQ>*

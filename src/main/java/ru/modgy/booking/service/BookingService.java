@@ -128,7 +128,8 @@ public interface BookingService {
      *
      * @param userId    - id пользователя, направляющего запрос
      * @param bookingId - id бронирования, для которого отбираются доступные статусы
+     * @param date      - дата, на которую производится проверка доступности статусов
      * @return HashMap, где ключ - допустимый к установке статус, значение - список необходимых для установки условий.
      */
-    List<StatusBooking> getAllAvailableStatusesWithConditions(Long userId, Long bookingId);
+    List<StatusBooking> getAllAvailableStatuses(Long userId, Long bookingId, LocalDate date);
 }

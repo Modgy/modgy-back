@@ -312,6 +312,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/requesterHeader'
         - $ref: '#/components/parameters/bookingId'
+        - $ref: '#/components/parameters/date'
       responses:
         '200':
           description: OK
@@ -932,6 +933,14 @@ components:
       in: query
       description: Дата окончания периода в формате "dd.MM.yyyy". Должна быть равна или позже даты начала периода.
       required: true
+      schema:
+        type: string
+        format: date
+    date:
+      name: date
+      in: query
+      description: Дата, на которую запрашивается информация. Не является обязательным. Если дата не указана, по умолчанию устанавливается сегодня.
+      required: false
       schema:
         type: string
         format: date
