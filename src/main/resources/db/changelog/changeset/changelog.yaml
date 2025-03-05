@@ -1,0 +1,35 @@
+databaseChangeLog:
+    - include:
+        file: db/changelog/changeset/create-users-table.sql
+    - include:
+        file: db/changelog/changeset/insert-users-table.sql
+
+    - include:
+          file: db/changelog/changeset/create-owners-table.sql
+    - include:
+          file: db/changelog/changeset/insert-owners-table.sql
+
+    - include:
+          file: db/changelog/changeset/create-pets-table.sql
+    - include:
+          file: db/changelog/changeset/insert-pets-table.sql
+
+    - include:
+          file: db/changelog/changeset/create-categories-table.sql
+    - include:
+          file: db/changelog/changeset/insert-categories-table.sql
+
+    - include:
+          file: db/changelog/changeset/create-rooms-table.sql
+    - include:
+          file: db/changelog/changeset/insert-rooms-table.sql
+
+    - include:
+          file: db/changelog/changeset/create-bookings-table.sql
+    - include:
+          file: db/changelog/changeset/insert-bookings-table.sql
+
+    - include:
+          file: db/changelog/changeset/create-pets-in-bookings-table.sql
+    - include:
+          file: db/changelog/changeset/insert-pets-in-bookings-table.sql

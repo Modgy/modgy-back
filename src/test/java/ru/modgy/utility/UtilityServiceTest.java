@@ -17,7 +17,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@SpringBootTest
+@SpringBootTest(properties = {"spring.liquibase.enabled=false"})
 @ActiveProfiles("test")
 class UtilityServiceTest {
     private final User boss = User.builder()

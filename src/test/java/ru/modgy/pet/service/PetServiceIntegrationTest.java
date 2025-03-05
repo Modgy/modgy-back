@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Transactional
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@SpringBootTest
+@SpringBootTest(properties = {"spring.liquibase.enabled=false"})
 @ActiveProfiles("test")
 public class PetServiceIntegrationTest {
     private final EntityManager em;
