@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Проверим, есть ли среди индексированных (staged) файлов jar-файлы
+if git diff --cached --name-only | grep -E '\.jar$'; then
+  echo "Коммит отклонен: обнаружены .jar-файлы!"
+  exit 1
+fi
+
+# Задаём максимальный допустимый размер файла: 5 МБ (в байтах)
+max_size=$((5*1024*1024))
+
+for file in $(git diff --cached --name-only); do
+    # Если файл существует (может быть удалённый файл в индексе)
+    if [ -f "$file" ]; then
+        # Получаем размер файла. На Linux используется stat -c%s, для macOS: stat -f%z
+        file_size=$(stat -c%s "$file" 2>/dev/null)
+        if [ -z "$file_size" ]; then
+            file_size=$(stat -f%z "$file" 2>/dev/null)
+        fi
+
+        # Если размер файла больше max_size, блокируем коммит
+        if [ "$file_size" -gt "$max_size" ]; then
+            echo "Коммит отклонен: файл $file размером ${file_size} байт превышает 5 МБ."
+            exit 1
+        fi
+    fi
+done
+
+exit 0

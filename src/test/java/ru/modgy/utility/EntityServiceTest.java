@@ -37,7 +37,7 @@ import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.when;
 
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@SpringBootTest
+@SpringBootTest(properties = {"spring.liquibase.enabled=false"})
 @ActiveProfiles("test")
 class EntityServiceTest {
     private final User user = User.builder()
