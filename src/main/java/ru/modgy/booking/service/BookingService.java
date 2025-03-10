@@ -3,6 +3,7 @@ package ru.modgy.booking.service;
 import ru.modgy.booking.dto.BookingDto;
 import ru.modgy.booking.dto.NewBookingDto;
 import ru.modgy.booking.dto.UpdateBookingDto;
+import ru.modgy.booking.model.StatusBooking;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -120,4 +121,15 @@ public interface BookingService {
      * @return список всех имеющихся бронирований на пребывание всех питомцев конкретного клиента
      */
     List<BookingDto> findAllBookingsByOwner(Long userId, Long ownerId);
+
+    /**
+     * Получение всех доступных для установки статусов для заданного бронирования
+     * (в том числе тех, для которых требуется выполнение дополнительных условий).
+     *
+     * @param userId    - id пользователя, направляющего запрос
+     * @param bookingId - id бронирования, для которого отбираются доступные статусы
+     * @param date      - дата, на которую производится проверка доступности статусов
+     * @return HashMap, где ключ - допустимый к установке статус, значение - список необходимых для установки условий.
+     */
+    List<StatusBooking> getAllAvailableStatuses(Long userId, Long bookingId, LocalDate date);
 }

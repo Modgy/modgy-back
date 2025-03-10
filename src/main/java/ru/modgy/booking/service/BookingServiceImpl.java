@@ -293,6 +293,23 @@ public class BookingServiceImpl implements BookingService {
         return bookingDtoList;
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public List<StatusBooking> getAllAvailableStatuses(Long userId, Long bookingId, LocalDate today) {
+        Booking booking = entityService.getBookingIfExists(bookingId);
+        if (booking.getStatus().equals(StatusBooking.STATUS_INITIAL)) {
+            return getStatusesForInitialBooking(booking, today);
+        } else if (booking.getStatus().equals(StatusBooking.STATUS_CONFIRMED)) {
+            return getStatusesForConfirmedBooking(booking, today);
+        } else if (booking.getStatus().equals(StatusBooking.STATUS_CHECKED_IN)) {
+            return getStatusesForCheckedInBooking(booking, today);
+        } else if (booking.getStatus().equals(StatusBooking.STATUS_CHECKED_OUT)) {
+            return getStatusesForCheckedOutBooking(booking, today);
+        } else {
+            return getStatusesForCancelledBooking(booking, today);
+        }
+    }
+
     private List<Booking> findBookingsForRoomInDates(Long roomId, LocalDate checkInDate, LocalDate checkOutDate) {
         return bookingRepository.findBookingsForRoomInDates(
                         roomId, checkInDate, checkOutDate)
@@ -386,5 +403,92 @@ public class BookingServiceImpl implements BookingService {
             petDto.setOwnerShortDto(ownerMapper.toOwnerShortDto(owners.get(petDto.getId())));
         }
         return petsDto;
+    }
+
+    private List<StatusBooking> getStatusesForInitialBooking(Booking booking, LocalDate date) {
+        List<StatusBooking> result = new ArrayList<>();
+        result.add(StatusBooking.STATUS_CONFIRMED);
+        result.add(StatusBooking.STATUS_CANCELLED);
+
+        if (booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isBefore(date)) {
+            result.add(StatusBooking.STATUS_CHECKED_OUT);
+        } else if ((booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isEqual(date)) ||
+                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isEqual(date)) ||
+                (booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isAfter(date)) ||
+                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isAfter(date)) ||
+                (booking.getCheckInDate().isAfter(date) && booking.getCheckOutDate().isAfter(date))) {
+            result.add(StatusBooking.STATUS_CHECKED_IN);
+        }
+        return result;
+    }
+
+    private List<StatusBooking> getStatusesForConfirmedBooking(Booking booking, LocalDate date) {
+        List<StatusBooking> result = new ArrayList<>();
+        result.add(StatusBooking.STATUS_INITIAL);
+        result.add(StatusBooking.STATUS_CANCELLED);
+
+        if (booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isBefore(date)) {
+            result.add(StatusBooking.STATUS_CHECKED_OUT);
+        } else if ((booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isEqual(date)) ||
+                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isEqual(date)) ||
+                (booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isAfter(date)) ||
+                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isAfter(date)) ||
+                (booking.getCheckInDate().isAfter(date) && booking.getCheckOutDate().isAfter(date))) {
+            result.add(StatusBooking.STATUS_CHECKED_IN);
+        }
+        return result;
+    }
+
+    private List<StatusBooking> getStatusesForCheckedInBooking(Booking booking, LocalDate date) {
+        List<StatusBooking> result = new ArrayList<>();
+
+        if (booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isBefore(date)) {
+            result.add(StatusBooking.STATUS_CHECKED_OUT);
+            result.add(StatusBooking.STATUS_CANCELLED);
+        } else if ((booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isEqual(date)) ||
+                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isEqual(date)) ||
+                (booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isAfter(date)) ||
+                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isAfter(date))) {
+            result.add(StatusBooking.STATUS_INITIAL);
+            result.add(StatusBooking.STATUS_CONFIRMED);
+            result.add(StatusBooking.STATUS_CHECKED_OUT);
+            result.add(StatusBooking.STATUS_CANCELLED);
+        }
+        return result;
+    }
+
+    private List<StatusBooking> getStatusesForCheckedOutBooking(Booking booking, LocalDate date) {
+        List<StatusBooking> result = new ArrayList<>();
+
+        if ((booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isBefore(date)) ||
+                (booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isEqual(date)) ||
+                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isEqual(date))) {
+            result.add(StatusBooking.STATUS_CANCELLED);
+            result.add(StatusBooking.STATUS_CHECKED_IN);
+        }
+        return result;
+    }
+
+    private List<StatusBooking> getStatusesForCancelledBooking(Booking booking, LocalDate date) {
+        List<StatusBooking> result = new ArrayList<>();
+
+        if (booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isBefore(date)) {
+            result.add(StatusBooking.STATUS_CHECKED_OUT);
+        } else if ((booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isEqual(date)) ||
+                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isEqual(date))) {
+            result.add(StatusBooking.STATUS_INITIAL);
+            result.add(StatusBooking.STATUS_CONFIRMED);
+            result.add(StatusBooking.STATUS_CHECKED_IN);
+            result.add(StatusBooking.STATUS_CHECKED_OUT);
+        } else if (booking.getCheckInDate().isAfter(date) && booking.getCheckOutDate().isAfter(date)) {
+            result.add(StatusBooking.STATUS_INITIAL);
+            result.add(StatusBooking.STATUS_CONFIRMED);
+        } else if ((booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isAfter(date)) ||
+                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isAfter(date))) {
+            result.add(StatusBooking.STATUS_INITIAL);
+            result.add(StatusBooking.STATUS_CONFIRMED);
+            result.add(StatusBooking.STATUS_CHECKED_IN);
+        }
+        return result;
     }
 }
