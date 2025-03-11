@@ -440,4 +440,25 @@ class BookingServiceIntegrationTest {
         assertThat(result.get(0).getRoom().getNumber(), equalTo(bookingDto.getRoom().getNumber()));
         assertThat(result.get(0).getPets().size(), equalTo(1));
     }
+
+    @Test
+    void getAllAvailableStatuses() {
+        em.persist(requesterAdmin);
+        em.persist(category);
+        em.persist(room);
+        em.persist(owner);
+        em.persist(pet);
+        em.persist(booking);
+
+        List<StatusBooking> result = service.getAllAvailableStatuses(
+                requesterAdmin.getId(), booking.getId(), LocalDate.now());
+
+        assertThat(result, hasSize(3));
+        assertThat(result.get(0), notNullValue());
+        assertThat(result.get(0), equalTo(StatusBooking.STATUS_CONFIRMED));
+        assertThat(result.get(1), notNullValue());
+        assertThat(result.get(1), equalTo(StatusBooking.STATUS_CANCELLED));
+        assertThat(result.get(2), notNullValue());
+        assertThat(result.get(2), equalTo(StatusBooking.STATUS_CHECKED_OUT));
+    }
 }
