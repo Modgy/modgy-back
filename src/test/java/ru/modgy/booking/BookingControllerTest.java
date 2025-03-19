@@ -47,6 +47,7 @@ class BookingControllerTest {
     private final long ownerId = 1L;
     private final LocalDate checkIn = LocalDate.of(2024, 1, 1);
     private final LocalDate checkOut = LocalDate.of(2024, 1, 2);
+    private final LocalDate checkDate = LocalDate.of(2025, 1, 1);
 
     private final RoomDto roomDto = RoomDto.builder()
             .id(roomId)
@@ -352,5 +353,22 @@ class BookingControllerTest {
         verify(bookingService).findAllBookingsByOwner(requesterId, ownerId);
         verify(bookingService, times(1))
                 .findAllBookingsByOwner(requesterId, ownerId);
+    }
+
+    @Test
+    @SneakyThrows
+    void getAllAvailableStatuses() {
+        when(bookingService.getAllAvailableStatuses(anyLong(), anyLong(), any()))
+                .thenReturn(List.of(bookingDto.getStatus()));
+
+        mockMvc.perform(get("/bookings/{bookingId}/availableStatus", bookingId)
+                        .header(requesterHeader, requesterId)
+                        .accept(MediaType.ALL_VALUE)
+                        .param("date", "01.01.2025" ))
+                .andExpect(status().isOk());
+
+        verify(bookingService).getAllAvailableStatuses(requesterId, bookingId, checkDate);
+        verify(bookingService, times(1))
+                .getAllAvailableStatuses(requesterId, bookingId, checkDate);
     }
 }
