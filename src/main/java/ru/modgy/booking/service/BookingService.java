@@ -12,68 +12,62 @@ public interface BookingService {
     /**
      * Добавление нового бронирования (типа бронирование или типа закрытие)
      *
-     * @param userId        - id пользователя, направляющего запрос
      * @param newBookingDto - данные добавляемого бронирования
      * @return данные добавленного бронирования
      */
-    BookingDto addBooking(Long userId, NewBookingDto newBookingDto);
+    BookingDto addBooking(NewBookingDto newBookingDto);
 
     /**
      * Получение по id информации о бронировании
      *
-     * @param userId    - id пользователя, направляющего запрос
      * @param bookingId - id запрашиваемого бронирования
      * @return данные запрашиваемого бронирования
      */
-    BookingDto getBookingById(Long userId, Long bookingId);
+    BookingDto getBookingById(Long bookingId);
 
     /**
      * Обновление информации о бронировании
      *
-     * @param userId           - id пользователя, направляющего запрос
      * @param bookingId        - id обновляемого бронирования
+     * @param today            - дата, заданная в качестве текущей
      * @param updateBookingDto - обновляемые данные
      * @return данные обновленного бронирования
      */
-    BookingDto updateBooking(Long userId, Long bookingId, UpdateBookingDto updateBookingDto);
+    BookingDto updateBooking(Long bookingId, LocalDate today, UpdateBookingDto updateBookingDto);
 
     /**
      * Удаление по id информации о бронировании
      *
-     * @param userId    - id пользователя, направляющего запрос
      * @param bookingId - id удаляемого бронирования
      */
-    void deleteBookingById(Long userId, Long bookingId);
+    void deleteBookingById(Long bookingId);
 
     /**
      * Поиск пересекающихся бронирований. Поиск бронирований, пересекающихся с выбранными датами.
      * Например, дата окончания имеющегося в БД бронирования = checkInDate в текущем запросе
      * или дата начала имеющегося в БД бронирования = checkOutDate в текущем запросе.
      *
-     * @param userId       - id пользователя, направляющего запрос
      * @param roomId       - id номера, бронирования которого проверяются
      * @param checkInDate  - дата заезда, по которой ведется поиск пересечений
      * @param checkOutDate - дата выезда, по которой ведется поиск пересечений
      * @return список пересекающихся бронирований
      */
-    List<BookingDto> findCrossingBookingsForRoomInDates(Long userId, Long roomId, LocalDate checkInDate, LocalDate checkOutDate);
+    List<BookingDto> findCrossingBookingsForRoomInDates(Long roomId, LocalDate checkInDate, LocalDate checkOutDate);
 
     /**
      * Проверка доступности номера для создания нового бронирования в выбранные даты
      *
-     * @param userId       - id пользователя, направляющего запрос
      * @param roomId       - id номера, бронирования которого проверяются
      * @param checkInDate  - дата заезда, с которой начинается временной интервал для проверки доступности номера
      * @param checkOutDate - дата выезда, на которой заканчивается временной интервал для проверки доступности номера
      *
      * Если номер недоступен к брони в указанные даты - возвращается исключение ConflictException.
      */
-    void checkRoomAvailableInDates(Long userId, Long roomId, LocalDate checkInDate, LocalDate checkOutDate);
+    void checkRoomAvailableInDates(Long roomId, LocalDate checkInDate, LocalDate checkOutDate);
 
     /**
      * Проверка доступности номера для редактирования бронирования в выбранные даты
      *
-     * @param userId       - id пользователя, направляющего запрос
      * @param roomId       - id номера, бронирования которого проверяются
      * @param bookingId    - id бронирования, которое в процессе редактирования
      * @param checkInDate  - дата заезда, с которой начинается временной интервал для проверки доступности номера
@@ -81,55 +75,50 @@ public interface BookingService {
      *
      * Если номер недоступен к брони в указанные даты - возвращается исключение ConflictException.
      */
-    void checkUpdateBookingRoomAvailableInDates(Long userId, Long roomId, Long bookingId, LocalDate checkInDate, LocalDate checkOutDate);
+    void checkUpdateBookingRoomAvailableInDates(Long roomId, Long bookingId, LocalDate checkInDate, LocalDate checkOutDate);
 
     /**
      * Поиск блокирующих бронирований, накладывающихся на выбранные даты, которые не позволяют добавить новое бронирование
      *
-     * @param userId       - id пользователя, направляющего запрос
      * @param roomId       - id номера, бронирования которого проверяются
      * @param checkInDate  - дата заезда, с которой начинается временной интервал для проверки наличия блокирующих бронирований
      * @param checkOutDate - дата выезда, на которой заканчивается временной интервал для проверки наличия блокирующих бронирований
      * @return список блокирующих бронирований
      */
-    List<BookingDto> findBlockingBookingsForRoomInDates(Long userId, Long roomId, LocalDate checkInDate, LocalDate checkOutDate);
+    List<BookingDto> findBlockingBookingsForRoomInDates(Long roomId, LocalDate checkInDate, LocalDate checkOutDate);
 
     /**
      * Поиск всех имеющихся бронирований в заданные даты, кроме отмененных.
      *
-     * @param userId    - id пользователя, направляющего запрос
      * @param startDate - дата начала периода, за который отбираются бронирования
      * @param endDate   - дата окончания периода, за который отбираются бронирования
      * @return список бронирований в указанные даты с любым статусом, кроме "отменено"
      */
-    List<BookingDto> findAllBookingsInDates(Long userId, LocalDate startDate, LocalDate endDate);
+    List<BookingDto> findAllBookingsInDates(LocalDate startDate, LocalDate endDate);
 
     /**
      * Поиск всех имеющихся бронирований на пребывание конкретного питомца.
      *
-     * @param userId    - id пользователя, направляющего запрос
      * @param petId - id питомца, чьи бронирования отбираются
      * @return список всех имеющихся бронирований на пребывание конкретного питомца
      */
-    List<BookingDto> findAllBookingsByPet(Long userId, Long petId);
+    List<BookingDto> findAllBookingsByPet(Long petId);
 
     /**
      * Поиск всех имеющихся бронирований на пребывание всех питомцев конкретного клиента.
      *
-     * @param userId    - id пользователя, направляющего запрос
      * @param ownerId - id клиента, чьи бронирования отбираются
      * @return список всех имеющихся бронирований на пребывание всех питомцев конкретного клиента
      */
-    List<BookingDto> findAllBookingsByOwner(Long userId, Long ownerId);
+    List<BookingDto> findAllBookingsByOwner(Long ownerId);
 
     /**
      * Получение всех доступных для установки статусов для заданного бронирования
      * (в том числе тех, для которых требуется выполнение дополнительных условий).
      *
-     * @param userId    - id пользователя, направляющего запрос
      * @param bookingId - id бронирования, для которого отбираются доступные статусы
      * @param date      - дата, на которую производится проверка доступности статусов
      * @return HashMap, где ключ - допустимый к установке статус, значение - список необходимых для установки условий.
      */
-    List<StatusBooking> getAllAvailableStatuses(Long userId, Long bookingId, LocalDate date);
+    List<StatusBooking> getAllAvailableStatuses(Long bookingId, LocalDate date);
 }

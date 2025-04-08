@@ -87,7 +87,7 @@ class BookingControllerTest {
     @Test
     @SneakyThrows
     void addBooking() {
-        when(bookingService.addBooking(anyLong(), any(NewBookingDto.class))).thenReturn(bookingDto);
+        when(bookingService.addBooking(any(NewBookingDto.class))).thenReturn(bookingDto);
 
         mockMvc.perform(post("/bookings")
                         .header(requesterHeader, requesterId)
@@ -106,7 +106,7 @@ class BookingControllerTest {
                 .andExpect(jsonPath("$.amount").value(bookingDto.getAmount()))
                 .andExpect(jsonPath("$.prepaymentAmount").value(bookingDto.getPrepaymentAmount()));
 
-        verify(bookingService).addBooking(anyLong(), any(NewBookingDto.class));
+        verify(bookingService).addBooking(any(NewBookingDto.class));
 
         mockMvc.perform(post("/bookings")
                         .accept(MediaType.APPLICATION_JSON)
@@ -121,13 +121,13 @@ class BookingControllerTest {
                         .content(objectMapper.writeValueAsString(new BookingDto())))
                 .andExpect(status().isBadRequest());
 
-        verify(bookingService, times(1)).addBooking(anyLong(), any(NewBookingDto.class));
+        verify(bookingService, times(1)).addBooking(any(NewBookingDto.class));
     }
 
     @Test
     @SneakyThrows
     void getBookingById() {
-        when(bookingService.getBookingById(anyLong(), anyLong())).thenReturn(bookingDto);
+        when(bookingService.getBookingById(anyLong())).thenReturn(bookingDto);
 
         mockMvc.perform(get("/bookings/{id}", bookingId)
                         .header(requesterHeader, requesterId)
@@ -144,20 +144,20 @@ class BookingControllerTest {
                 .andExpect(jsonPath("$.amount").value(bookingDto.getAmount()))
                 .andExpect(jsonPath("$.prepaymentAmount").value(bookingDto.getPrepaymentAmount()));
 
-        verify(bookingService).getBookingById(requesterId, bookingId);
+        verify(bookingService).getBookingById(bookingId);
 
-        when(bookingService.getBookingById(anyLong(), anyLong())).thenThrow(NotFoundException.class);
+        when(bookingService.getBookingById(anyLong())).thenThrow(NotFoundException.class);
         mockMvc.perform(get("/bookings/{id}", roomId)
                         .header(requesterHeader, requesterId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
-        verify(bookingService, times(2)).getBookingById(requesterId, bookingId);
+        verify(bookingService, times(2)).getBookingById(bookingId);
     }
 
     @Test
     @SneakyThrows
     void updateBooking() {
-        when(bookingService.updateBooking(anyLong(), eq(bookingId), any(UpdateBookingDto.class))).thenReturn(bookingDto);
+        when(bookingService.updateBooking(eq(bookingId), any(LocalDate.class), any(UpdateBookingDto.class))).thenReturn(bookingDto);
 
         mockMvc.perform(patch("/bookings/{id}", roomId)
                         .header(requesterHeader, requesterId)
@@ -177,7 +177,7 @@ class BookingControllerTest {
                 .andExpect(jsonPath("$.prepaymentAmount").value(bookingDto.getPrepaymentAmount()));
 
 
-        when(bookingService.updateBooking(anyLong(), eq(bookingId), any(UpdateBookingDto.class)))
+        when(bookingService.updateBooking(eq(bookingId), any(LocalDate.class), any(UpdateBookingDto.class)))
                 .thenThrow(NotFoundException.class);
 
         mockMvc.perform(patch("/bookings/{id}", roomId)
@@ -195,18 +195,18 @@ class BookingControllerTest {
                         .accept(MediaType.ALL_VALUE))
                 .andExpect(status().isNoContent());
 
-        verify(bookingService).deleteBookingById(requesterId, bookingId);
+        verify(bookingService).deleteBookingById(bookingId);
 
         doThrow(NotFoundException.class)
                 .when(bookingService)
-                .deleteBookingById(requesterId, bookingId);
+                .deleteBookingById(bookingId);
 
         mockMvc.perform(delete("/bookings/{Id}", bookingId)
                         .header(requesterHeader, requesterId)
                         .accept(MediaType.ALL_VALUE))
                 .andExpect(status().isNotFound());
 
-        verify(bookingService, times(2)).deleteBookingById(requesterId, bookingId);
+        verify(bookingService, times(2)).deleteBookingById(bookingId);
     }
 
     @Test
@@ -220,11 +220,11 @@ class BookingControllerTest {
                         .param("checkOutDate", "02.01.2024"))
                 .andExpect(status().isOk());
 
-        verify(bookingService).checkRoomAvailableInDates(requesterId, roomId, checkIn, checkOut);
+        verify(bookingService).checkRoomAvailableInDates(roomId, checkIn, checkOut);
 
         doThrow(ConflictException.class)
                 .when(bookingService)
-                .checkRoomAvailableInDates(anyLong(), anyLong(), any(LocalDate.class), any(LocalDate.class));
+                .checkRoomAvailableInDates(anyLong(), any(LocalDate.class), any(LocalDate.class));
 
         mockMvc.perform(get("/bookings/rooms/{roomId}/checkRoomAvailable", roomId)
                         .header(requesterHeader, requesterId)
@@ -234,7 +234,7 @@ class BookingControllerTest {
                 .andExpect(status().isConflict());
 
         verify(bookingService, times(2))
-                .checkRoomAvailableInDates(requesterId, roomId, checkIn, checkOut);
+                .checkRoomAvailableInDates(roomId, checkIn, checkOut);
     }
 
     @Test
@@ -248,12 +248,12 @@ class BookingControllerTest {
                         .param("checkOutDate", "02.01.2024"))
                 .andExpect(status().isOk());
 
-        verify(bookingService).checkUpdateBookingRoomAvailableInDates(requesterId, roomId, bookingId, checkIn, checkOut);
+        verify(bookingService).checkUpdateBookingRoomAvailableInDates(roomId, bookingId, checkIn, checkOut);
 
 
         doThrow(ConflictException.class)
                 .when(bookingService)
-                .checkUpdateBookingRoomAvailableInDates(anyLong(), anyLong(), anyLong(), any(LocalDate.class), any(LocalDate.class));
+                .checkUpdateBookingRoomAvailableInDates(anyLong(), anyLong(), any(LocalDate.class), any(LocalDate.class));
 
         mockMvc.perform(get("/bookings/{roomId}/rooms/{bookingId}/checkUpdateRoomAvailable", roomId, bookingId)
                         .header(requesterHeader, requesterId)
@@ -263,14 +263,14 @@ class BookingControllerTest {
                 .andExpect(status().isConflict());
 
         verify(bookingService, times(2))
-                .checkUpdateBookingRoomAvailableInDates(requesterId, roomId, bookingId, checkIn, checkOut);
+                .checkUpdateBookingRoomAvailableInDates(roomId, bookingId, checkIn, checkOut);
     }
 
     @Test
     @SneakyThrows
     @DateTimeFormat(iso= DateTimeFormat.ISO.DATE)
     void findBlockingBookingsForRoomInDates() {
-        when(bookingService.findBlockingBookingsForRoomInDates(anyLong(), anyLong(), any(LocalDate.class), any(LocalDate.class)))
+        when(bookingService.findBlockingBookingsForRoomInDates(anyLong(), any(LocalDate.class), any(LocalDate.class)))
                 .thenReturn(List.of(bookingDto));
 
         mockMvc.perform(get("/bookings/rooms/{roomId}/blockingBookingsInDates", roomId)
@@ -280,16 +280,16 @@ class BookingControllerTest {
                         .param("checkOutDate", "02.01.2024"))
                 .andExpect(status().isOk());
 
-        verify(bookingService).findBlockingBookingsForRoomInDates(requesterId, roomId, checkIn, checkOut);
+        verify(bookingService).findBlockingBookingsForRoomInDates(roomId, checkIn, checkOut);
         verify(bookingService, times(1))
-                .findBlockingBookingsForRoomInDates(requesterId, roomId, checkIn, checkOut);
+                .findBlockingBookingsForRoomInDates(roomId, checkIn, checkOut);
     }
 
     @Test
     @SneakyThrows
     @DateTimeFormat(iso= DateTimeFormat.ISO.DATE)
     void findCrossingBookingsForRoomInDates() {
-        when(bookingService.findCrossingBookingsForRoomInDates(anyLong(), anyLong(), any(LocalDate.class), any(LocalDate.class)))
+        when(bookingService.findCrossingBookingsForRoomInDates(anyLong(), any(LocalDate.class), any(LocalDate.class)))
                 .thenReturn(List.of(bookingDto));
 
         mockMvc.perform(get("/bookings/rooms/{roomId}/crossingBookingsOfRoomInDates", roomId)
@@ -299,16 +299,16 @@ class BookingControllerTest {
                         .param("checkOutDate", "02.01.2024"))
                 .andExpect(status().isOk());
 
-        verify(bookingService).findCrossingBookingsForRoomInDates(requesterId, roomId, checkIn, checkOut);
+        verify(bookingService).findCrossingBookingsForRoomInDates(roomId, checkIn, checkOut);
         verify(bookingService, times(1))
-                .findCrossingBookingsForRoomInDates(requesterId, roomId, checkIn, checkOut);
+                .findCrossingBookingsForRoomInDates(roomId, checkIn, checkOut);
     }
 
     @Test
     @SneakyThrows
     @DateTimeFormat(iso= DateTimeFormat.ISO.DATE)
     void findAllBookingsInDates() {
-        when(bookingService.findAllBookingsInDates(anyLong(), any(LocalDate.class), any(LocalDate.class)))
+        when(bookingService.findAllBookingsInDates(any(LocalDate.class), any(LocalDate.class)))
                 .thenReturn(List.of(bookingDto));
 
         mockMvc.perform(get("/bookings/inDates")
@@ -318,15 +318,15 @@ class BookingControllerTest {
                         .param("endDate", "02.01.2024"))
                 .andExpect(status().isOk());
 
-        verify(bookingService).findAllBookingsInDates(requesterId, checkIn, checkOut);
+        verify(bookingService).findAllBookingsInDates(checkIn, checkOut);
         verify(bookingService, times(1))
-                .findAllBookingsInDates(requesterId, checkIn, checkOut);
+                .findAllBookingsInDates(checkIn, checkOut);
     }
 
     @Test
     @SneakyThrows
     void findAllBookingsByPet() {
-        when(bookingService.findAllBookingsByPet(anyLong(), anyLong()))
+        when(bookingService.findAllBookingsByPet(anyLong()))
                 .thenReturn(List.of(bookingDto));
 
         mockMvc.perform(get("/bookings/allByPet/pets/{petId}", petId)
@@ -334,15 +334,15 @@ class BookingControllerTest {
                         .accept(MediaType.ALL_VALUE))
                 .andExpect(status().isOk());
 
-        verify(bookingService).findAllBookingsByPet(requesterId, petId);
+        verify(bookingService).findAllBookingsByPet(petId);
         verify(bookingService, times(1))
-                .findAllBookingsByPet(requesterId, petId);
+                .findAllBookingsByPet(petId);
     }
 
     @Test
     @SneakyThrows
     void findAllBookingsByOwner() {
-        when(bookingService.findAllBookingsByOwner(anyLong(), anyLong()))
+        when(bookingService.findAllBookingsByOwner(anyLong()))
                 .thenReturn(List.of(bookingDto));
 
         mockMvc.perform(get("/bookings/allByOwner/owners/{ownerId}", ownerId)
@@ -350,15 +350,15 @@ class BookingControllerTest {
                         .accept(MediaType.ALL_VALUE))
                 .andExpect(status().isOk());
 
-        verify(bookingService).findAllBookingsByOwner(requesterId, ownerId);
+        verify(bookingService).findAllBookingsByOwner(ownerId);
         verify(bookingService, times(1))
-                .findAllBookingsByOwner(requesterId, ownerId);
+                .findAllBookingsByOwner(ownerId);
     }
 
     @Test
     @SneakyThrows
     void getAllAvailableStatuses() {
-        when(bookingService.getAllAvailableStatuses(anyLong(), anyLong(), any()))
+        when(bookingService.getAllAvailableStatuses(anyLong(), any()))
                 .thenReturn(List.of(bookingDto.getStatus()));
 
         mockMvc.perform(get("/bookings/{bookingId}/availableStatus", bookingId)
@@ -367,8 +367,8 @@ class BookingControllerTest {
                         .param("date", "01.01.2025" ))
                 .andExpect(status().isOk());
 
-        verify(bookingService).getAllAvailableStatuses(requesterId, bookingId, checkDate);
+        verify(bookingService).getAllAvailableStatuses(bookingId, checkDate);
         verify(bookingService, times(1))
-                .getAllAvailableStatuses(requesterId, bookingId, checkDate);
+                .getAllAvailableStatuses(bookingId, checkDate);
     }
 }

@@ -152,7 +152,7 @@ class BookingServiceIntegrationTest {
         newBookingDto.setRoomId(room.getId());
         newBookingDto.setPetIds(List.of(pet.getId()));
 
-        BookingDto result = service.addBooking(requesterAdmin.getId(), newBookingDto);
+        BookingDto result = service.addBooking(newBookingDto);
 
         assertThat(result.getId(), notNullValue());
         assertThat(result.getType(), equalTo(bookingDto.getType()));
@@ -177,7 +177,7 @@ class BookingServiceIntegrationTest {
         em.persist(pet);
         em.persist(booking);
 
-        BookingDto result = service.getBookingById(requesterAdmin.getId(), booking.getId());
+        BookingDto result = service.getBookingById(booking.getId());
 
         assertThat(result.getId(), notNullValue());
         assertThat(result.getType(), equalTo(bookingDto.getType()));
@@ -206,7 +206,7 @@ class BookingServiceIntegrationTest {
         em.persist(pet);
         em.persist(booking);
 
-        BookingDto result = service.updateBooking(requesterAdmin.getId(), booking.getId(), updateBookingDto);
+        BookingDto result = service.updateBooking(booking.getId(), LocalDate.now(), updateBookingDto);
 
         assertThat(result.getId(), notNullValue());
         assertThat(result.getType(), equalTo(bookingDto.getType()));
@@ -231,12 +231,12 @@ class BookingServiceIntegrationTest {
         em.persist(pet);
         em.persist(booking);
 
-        service.deleteBookingById(requesterAdmin.getId(), booking.getId());
+        service.deleteBookingById(booking.getId());
 
         String error = String.format("Booking with id=%d is not found", booking.getId());
         NotFoundException exception = assertThrows(
                 NotFoundException.class,
-                () -> service.getBookingById(requesterAdmin.getId(), booking.getId())
+                () -> service.getBookingById(booking.getId())
         );
 
         assertEquals(error, exception.getMessage());
@@ -253,8 +253,7 @@ class BookingServiceIntegrationTest {
         em.persist(pet);
         em.persist(booking);
 
-        List<BookingDto> result = service.findCrossingBookingsForRoomInDates(
-                requesterAdmin.getId(), room.getId(), checkIn, checkOut);
+        List<BookingDto> result = service.findCrossingBookingsForRoomInDates(room.getId(), checkIn, checkOut);
 
         assertThat(result, hasSize(1));
         assertThat(result.get(0).getId(), notNullValue());
@@ -280,8 +279,7 @@ class BookingServiceIntegrationTest {
         em.persist(pet);
         em.persist(booking);
 
-        List<BookingDto> result = service.findBlockingBookingsForRoomInDates(
-                requesterAdmin.getId(), room.getId(), checkIn, checkOut);
+        List<BookingDto> result = service.findBlockingBookingsForRoomInDates(room.getId(), checkIn, checkOut);
 
         assertThat(result, hasSize(1));
         assertThat(result.get(0).getId(), notNullValue());
@@ -310,7 +308,7 @@ class BookingServiceIntegrationTest {
         String error = String.format("Room with id=%d is not available for current dates", room.getId());
         ConflictException exception = assertThrows(
                 ConflictException.class,
-                () -> service.checkRoomAvailableInDates(requesterAdmin.getId(), room.getId(), checkIn, checkOut)
+                () -> service.checkRoomAvailableInDates(room.getId(), checkIn, checkOut)
         );
 
         assertEquals(error, exception.getMessage());
@@ -326,7 +324,7 @@ class BookingServiceIntegrationTest {
         em.persist(booking);
 
         Assertions.assertDoesNotThrow(() -> service.checkRoomAvailableInDates(
-                requesterAdmin.getId(), room.getId(), checkIn.plusDays(2), checkOut.plusDays(4)));
+                room.getId(), checkIn.plusDays(2), checkOut.plusDays(4)));
     }
 
     @Test
@@ -354,7 +352,7 @@ class BookingServiceIntegrationTest {
         String error = String.format("Room with id=%d is not available for current dates", room.getId());
         ConflictException exception = assertThrows(
                 ConflictException.class,
-                () -> service.checkUpdateBookingRoomAvailableInDates(requesterAdmin.getId(), room.getId(), booking.getId(), checkIn, checkOut)
+                () -> service.checkUpdateBookingRoomAvailableInDates(room.getId(), booking.getId(), checkIn, checkOut)
         );
 
         assertEquals(error, exception.getMessage());
@@ -369,8 +367,7 @@ class BookingServiceIntegrationTest {
         em.persist(pet);
         em.persist(booking);
 
-        List<BookingDto> result = service.findAllBookingsInDates(
-                requesterAdmin.getId(), checkIn, checkOut);
+        List<BookingDto> result = service.findAllBookingsInDates(checkIn, checkOut);
 
         assertThat(result, hasSize(1));
         assertThat(result.get(0).getId(), notNullValue());
@@ -396,8 +393,7 @@ class BookingServiceIntegrationTest {
         em.persist(pet);
         em.persist(booking);
 
-        List<BookingDto> result = service.findAllBookingsByPet(
-                requesterAdmin.getId(), pet.getId());
+        List<BookingDto> result = service.findAllBookingsByPet(pet.getId());
 
         assertThat(result, hasSize(1));
         assertThat(result.get(0).getId(), notNullValue());
@@ -423,8 +419,7 @@ class BookingServiceIntegrationTest {
         em.persist(pet);
         em.persist(booking);
 
-        List<BookingDto> result = service.findAllBookingsByOwner(
-                requesterAdmin.getId(), owner.getId());
+        List<BookingDto> result = service.findAllBookingsByOwner(owner.getId());
 
         assertThat(result, hasSize(1));
         assertThat(result.get(0).getId(), notNullValue());
@@ -450,8 +445,7 @@ class BookingServiceIntegrationTest {
         em.persist(pet);
         em.persist(booking);
 
-        List<StatusBooking> result = service.getAllAvailableStatuses(
-                requesterAdmin.getId(), booking.getId(), LocalDate.now());
+        List<StatusBooking> result = service.getAllAvailableStatuses(booking.getId(), LocalDate.now());
 
         assertThat(result, hasSize(3));
         assertThat(result.get(0), notNullValue());
