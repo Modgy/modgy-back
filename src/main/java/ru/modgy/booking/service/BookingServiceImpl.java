@@ -168,6 +168,9 @@ public class BookingServiceImpl implements BookingService {
                 newBooking.getId(),
                 newBooking.getCheckInDate(),
                 newBooking.getCheckOutDate());
+        if (newBooking.getIsPrepaid() && newBooking.getStatus().equals(StatusBooking.STATUS_INITIAL)) {
+            newBooking.setStatus(StatusBooking.STATUS_CONFIRMED);
+        }
 
         Booking updatedBooking = bookingRepository.save(newBooking);
 
