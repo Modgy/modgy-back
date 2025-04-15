@@ -50,7 +50,6 @@ class BookingServiceImplTest {
     private final LocalDate checkIn = LocalDate.of(2024, 1, 1);
     private final LocalDate checkOut = LocalDate.of(2024, 1, 2);
     private final LocalDate checkDate = LocalDate.of(2025, 1,1);
-    private final LocalDate futureDate = LocalDate.of(2025, 12, 1);
     private final LocalDateTime registrationDate = LocalDateTime.now();
     private final Owner owner = Owner.builder()
             .id(1L)
@@ -203,6 +202,8 @@ class BookingServiceImplTest {
     @Mock
     private UtilityService utilityService;
     @Mock
+    private BookingStatusService statusService;
+    @Mock
     private BookingMapper bookingMapper;
     @Mock
     private OwnerMapper ownerMapper;
@@ -217,7 +218,7 @@ class BookingServiceImplTest {
         when(bookingMapper.toBookingDto(any(Booking.class))).thenReturn(bookingDto);
         when(ownerMapper.toOwnerShortDto(any(Owner.class))).thenReturn(ownerShortDto);
 
-        BookingDto result = bookingService.addBooking(boss.getId(), newBookingDto);
+        BookingDto result = bookingService.addBooking(newBookingDto);
 
         Assertions.assertNotNull(result);
         Assertions.assertEquals(1L, result.getId());
@@ -242,7 +243,7 @@ class BookingServiceImplTest {
                 .when(entityService).getRoomIfExists(anyLong());
 
         assertThrows(NotFoundException.class,
-                () -> bookingService.addBooking(user.getId(), newBookingDto));
+                () -> bookingService.addBooking(newBookingDto));
     }
 
     @Test
@@ -252,7 +253,7 @@ class BookingServiceImplTest {
         when(entityService.getListOfPetsByIds(any())).thenReturn(List.of(pet));
         when(bookingMapper.toBookingDto(any(Booking.class))).thenReturn(bookingDto);
 
-        BookingDto result = bookingService.getBookingById(boss.getId(), bookingId);
+        BookingDto result = bookingService.getBookingById(bookingId);
 
         Assertions.assertNotNull(result);
         Assertions.assertEquals(1L, result.getId());
@@ -276,7 +277,7 @@ class BookingServiceImplTest {
                 .when(entityService).getBookingIfExists(anyLong());
 
         assertThrows(NotFoundException.class,
-                () -> bookingService.getBookingById(user.getId(), bookingId));
+                () -> bookingService.getBookingById(bookingId));
     }
 
     @Test
@@ -290,7 +291,7 @@ class BookingServiceImplTest {
         when(bookingMapper.toBookingDto(any(Booking.class))).thenReturn(updatedBookingDto);
         when(bookingRepository.save(any(Booking.class))).thenReturn(updatedBooking);
 
-        BookingDto result = bookingService.updateBooking(boss.getId(), bookingId, updateBookingDto);
+        BookingDto result = bookingService.updateBooking(bookingId, checkDate, updateBookingDto);
 
         Assertions.assertNotNull(result);
         Assertions.assertEquals(1L, result.getId());
@@ -307,6 +308,7 @@ class BookingServiceImplTest {
         Assertions.assertEquals(updatedBookingDto.getPets(), result.getPets());
 
         verify(bookingRepository, times(1)).save(any(Booking.class));
+        verify(bookingRepository, times(1)).findBookingsForRoomInDates(anyLong(), any(), any());
         verifyNoMoreInteractions(bookingRepository);
     }
 
@@ -318,7 +320,7 @@ class BookingServiceImplTest {
                 .when(entityService).getBookingIfExists(anyLong());
 
         assertThrows(NotFoundException.class,
-                () -> bookingService.updateBooking(boss.getId(), bookingId, new UpdateBookingDto()));
+                () -> bookingService.updateBooking(bookingId, checkDate, new UpdateBookingDto()));
     }
 
     @Test
@@ -326,7 +328,7 @@ class BookingServiceImplTest {
         when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
         when(bookingRepository.deleteBookingById(anyLong())).thenReturn(1);
 
-        bookingService.deleteBookingById(boss.getId(), bookingId);
+        bookingService.deleteBookingById(bookingId);
 
         verify(bookingRepository, times(1)).deleteBookingById(anyLong());
         verifyNoMoreInteractions(bookingRepository);
@@ -337,7 +339,7 @@ class BookingServiceImplTest {
         when(entityService.getUserIfExists(anyLong())).thenReturn(null);
 
         assertThrows(NotFoundException.class,
-                () -> bookingService.deleteBookingById(boss.getId(), bookingId));
+                () -> bookingService.deleteBookingById(bookingId));
     }
 
     @Test
@@ -346,7 +348,7 @@ class BookingServiceImplTest {
         when(entityService.getBookingIfExists(anyLong())).thenReturn(null);
 
         assertThrows(NotFoundException.class,
-                () -> bookingService.deleteBookingById(boss.getId(), bookingId));
+                () -> bookingService.deleteBookingById(bookingId));
     }
 
     @Test
@@ -355,7 +357,7 @@ class BookingServiceImplTest {
         when(bookingMapper.toBookingDto(booking)).thenReturn(bookingDto);
         when(entityService.getListOfPetsByIds(any())).thenReturn(List.of(pet));
 
-        List<BookingDto> result = bookingService.findCrossingBookingsForRoomInDates(boss.getId(), room.getId(), checkIn, checkOut);
+        List<BookingDto> result = bookingService.findCrossingBookingsForRoomInDates(room.getId(), checkIn, checkOut);
 
         Assertions.assertNotNull(result);
         Assertions.assertEquals(1L, result.get(0).getId());
@@ -381,7 +383,7 @@ class BookingServiceImplTest {
         when(bookingMapper.toBookingDto(booking)).thenReturn(bookingDto);
         when(entityService.getListOfPetsByIds(any())).thenReturn(List.of(pet));
 
-        List<BookingDto> result = bookingService.findBlockingBookingsForRoomInDates(boss.getId(), room.getId(), checkIn, checkOut);
+        List<BookingDto> result = bookingService.findBlockingBookingsForRoomInDates(room.getId(), checkIn, checkOut);
 
         Assertions.assertNotNull(result);
         Assertions.assertEquals(1L, result.get(0).getId());
@@ -406,21 +408,21 @@ class BookingServiceImplTest {
         when(bookingRepository.findBookingsForRoomInDates(anyLong(), any(), any())).thenReturn(Optional.of(List.of(booking)));
 
         assertThrows(ConflictException.class,
-                () -> bookingService.checkRoomAvailableInDates(boss.getId(), room.getId(), checkIn, checkOut));
+                () -> bookingService.checkRoomAvailableInDates(room.getId(), checkIn, checkOut));
     }
 
     @Test
     void checkRoomAvailableInDates_whenNoBlockingBooking_thenNoConflictException() {
         when(bookingRepository.findBookingsForRoomInDates(anyLong(), any(), any())).thenReturn(Optional.empty());
 
-        Assertions.assertDoesNotThrow(() -> bookingService.checkRoomAvailableInDates(boss.getId(), room.getId(), checkIn, checkOut));
+        Assertions.assertDoesNotThrow(() -> bookingService.checkRoomAvailableInDates(room.getId(), checkIn, checkOut));
     }
 
     @Test
     void checkUpdateBookingRoomAvailableInDates_whenOneUpdatingBookingAndNoBlocking_thenNoConflictException() {
         when(bookingRepository.findBookingsForRoomInDates(anyLong(), any(), any())).thenReturn(Optional.of(List.of(booking)));
 
-        Assertions.assertDoesNotThrow(() -> bookingService.checkUpdateBookingRoomAvailableInDates(boss.getId(), room.getId(), bookingId, checkIn, checkOut));
+        Assertions.assertDoesNotThrow(() -> bookingService.checkUpdateBookingRoomAvailableInDates(room.getId(), bookingId, checkIn, checkOut));
     }
 
     @Test
@@ -441,7 +443,7 @@ class BookingServiceImplTest {
         when(bookingRepository.findBookingsForRoomInDates(anyLong(), any(), any())).thenReturn(Optional.of(List.of(booking, blockingBooking)));
 
         assertThrows(ConflictException.class,
-                () -> bookingService.checkRoomAvailableInDates(boss.getId(), room.getId(), checkIn, checkOut));
+                () -> bookingService.checkRoomAvailableInDates(room.getId(), checkIn, checkOut));
     }
 
     @Test
@@ -450,7 +452,7 @@ class BookingServiceImplTest {
         when(bookingMapper.toBookingDto(booking)).thenReturn(bookingDto);
         when(entityService.getListOfPetsByIds(any())).thenReturn(List.of(pet));
 
-        List<BookingDto> result = bookingService.findAllBookingsInDates(boss.getId(), checkIn, checkOut);
+        List<BookingDto> result = bookingService.findAllBookingsInDates(checkIn, checkOut);
 
         Assertions.assertNotNull(result);
         Assertions.assertEquals(1L, result.get(0).getId());
@@ -476,7 +478,7 @@ class BookingServiceImplTest {
         when(bookingMapper.toBookingDto(booking)).thenReturn(bookingDto);
         when(entityService.getListOfPetsByIds(any())).thenReturn(List.of(pet));
 
-        List<BookingDto> result = bookingService.findAllBookingsByPet(boss.getId(), pet.getId());
+        List<BookingDto> result = bookingService.findAllBookingsByPet(pet.getId());
 
         Assertions.assertNotNull(result);
         Assertions.assertEquals(1L, result.get(0).getId());
@@ -502,7 +504,7 @@ class BookingServiceImplTest {
         when(bookingMapper.toBookingDto(booking)).thenReturn(bookingDto);
         when(entityService.getListOfPetsByIds(any())).thenReturn(List.of(pet));
 
-        List<BookingDto> result = bookingService.findAllBookingsByOwner(boss.getId(), owner.getId());
+        List<BookingDto> result = bookingService.findAllBookingsByOwner(owner.getId());
 
         Assertions.assertNotNull(result);
         Assertions.assertEquals(1L, result.get(0).getId());
@@ -526,470 +528,12 @@ class BookingServiceImplTest {
     void getAllAvailableStatuses_whenBookingInitialStatusAndStartDateAndEndDateInPast_thenReturnedListOfStatuses() {
         when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
         when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
+        when(statusService.getAllAvailableStatuses(any(Booking.class), any(LocalDate.class))).thenReturn(List.of(StatusBooking.STATUS_INITIAL));
 
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(3, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_CONFIRMED, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_OUT, result.get(2));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingInitialStatusAndStartDateInPastAndEndDateToday_thenReturnedListOfStatuses() {
-        booking.setCheckOutDate(checkDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(3, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_CONFIRMED, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(2));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingInitialStatusAndStartDateTodayAndEndDateToday_thenReturnedListOfStatuses() {
-        booking.setCheckInDate(checkDate);
-        booking.setCheckOutDate(checkDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(3, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_CONFIRMED, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(2));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingInitialStatusAndStartDateInPastAndEndDateInFuture_thenReturnedListOfStatuses() {
-        booking.setCheckOutDate(futureDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(3, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_CONFIRMED, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(2));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingInitialStatusAndStartDateTodayAndEndDateInFuture_thenReturnedListOfStatuses() {
-        booking.setCheckInDate(checkDate);
-        booking.setCheckOutDate(futureDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(3, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_CONFIRMED, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(2));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingInitialStatusAndStartDateInFutureAndEndDateInFuture_thenReturnedListOfStatuses() {
-        booking.setCheckInDate(futureDate);
-        booking.setCheckOutDate(futureDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(3, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_CONFIRMED, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(2));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingConfirmedStatusAndStartDateAndEndDateInPast_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CONFIRMED);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(3, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_INITIAL, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_OUT, result.get(2));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingConfirmedStatusAndStartDateInPastAndEndDateToday_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CONFIRMED);
-        booking.setCheckOutDate(checkDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(3, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_INITIAL, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(2));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingConfirmedStatusAndStartDateTodayAndEndDateToday_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CONFIRMED);
-        booking.setCheckInDate(checkDate);
-        booking.setCheckOutDate(checkDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(3, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_INITIAL, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(2));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingConfirmedStatusAndStartDateInPastAndEndDateInFuture_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CONFIRMED);
-        booking.setCheckOutDate(futureDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(3, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_INITIAL, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(2));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingConfirmedStatusAndStartDateTodayAndEndDateInFuture_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CONFIRMED);
-        booking.setCheckInDate(checkDate);
-        booking.setCheckOutDate(futureDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(3, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_INITIAL, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(2));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingConfirmedStatusAndStartDateInFutureAndEndDateInFuture_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CONFIRMED);
-        booking.setCheckInDate(futureDate);
-        booking.setCheckOutDate(futureDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(3, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_INITIAL, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(2));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCheckedInStatusAndStartDateAndEndDateInPast_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CHECKED_IN);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(2, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_OUT, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(1));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCheckedInStatusAndStartDateInPastAndEndDateToday_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CHECKED_IN);
-        booking.setCheckOutDate(checkDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(4, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_INITIAL, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CONFIRMED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_OUT, result.get(2));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(3));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCheckedInStatusAndStartDateTodayAndEndDateToday_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CHECKED_IN);
-        booking.setCheckInDate(checkDate);
-        booking.setCheckOutDate(checkDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(4, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_INITIAL, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CONFIRMED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_OUT, result.get(2));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(3));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCheckedInStatusAndStartDateInPastAndEndDateInFuture_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CHECKED_IN);
-        booking.setCheckOutDate(futureDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(4, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_INITIAL, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CONFIRMED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_OUT, result.get(2));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(3));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCheckedInStatusAndStartDateTodayAndEndDateInFuture_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CHECKED_IN);
-        booking.setCheckInDate(checkDate);
-        booking.setCheckOutDate(futureDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(4, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_INITIAL, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CONFIRMED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_OUT, result.get(2));
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(3));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCheckedInStatusAndStartDateInFutureAndEndDateInFuture_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CHECKED_IN);
-        booking.setCheckInDate(futureDate);
-        booking.setCheckOutDate(futureDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(0, result.size());
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCheckedOutStatusAndStartDateAndEndDateInPast_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CHECKED_OUT);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(2, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(1));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCheckedOutStatusAndStartDateInPastAndEndDateToday_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CHECKED_OUT);
-        booking.setCheckOutDate(checkDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(2, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(1));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCheckedOutStatusAndStartDateTodayAndEndDateToday_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CHECKED_OUT);
-        booking.setCheckInDate(checkDate);
-        booking.setCheckOutDate(checkDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(2, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_CANCELLED, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(1));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCheckedOutStatusAndStartDateInPastAndEndDateInFuture_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CHECKED_OUT);
-        booking.setCheckOutDate(futureDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(0, result.size());
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCheckedOutStatusAndStartDateTodayAndEndDateInFuture_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CHECKED_OUT);
-        booking.setCheckInDate(checkDate);
-        booking.setCheckOutDate(futureDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(0, result.size());
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCheckedOutStatusAndStartDateInFutureAndEndDateInFuture_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CHECKED_OUT);
-        booking.setCheckInDate(futureDate);
-        booking.setCheckOutDate(futureDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(0, result.size());
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCancelledStatusAndStartDateAndEndDateInPast_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CANCELLED);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
+        List<StatusBooking> result = bookingService.getAllAvailableStatuses(booking.getId(), checkDate);
 
         Assertions.assertNotNull(result);
         Assertions.assertEquals(1, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_OUT, result.get(0));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCancelledStatusAndStartDateInPastAndEndDateToday_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CANCELLED);
-        booking.setCheckOutDate(checkDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(4, result.size());
         Assertions.assertEquals(StatusBooking.STATUS_INITIAL, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CONFIRMED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(2));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_OUT, result.get(3));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCancelledStatusAndStartDateTodayAndEndDateToday_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CANCELLED);
-        booking.setCheckInDate(checkDate);
-        booking.setCheckOutDate(checkDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(4, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_INITIAL, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CONFIRMED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(2));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_OUT, result.get(3));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCancelledStatusAndStartDateInPastAndEndDateInFuture_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CANCELLED);
-        booking.setCheckOutDate(futureDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(3, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_INITIAL, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CONFIRMED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(2));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCancelledStatusAndStartDateTodayAndEndDateInFuture_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CANCELLED);
-        booking.setCheckInDate(checkDate);
-        booking.setCheckOutDate(futureDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(3, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_INITIAL, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CONFIRMED, result.get(1));
-        Assertions.assertEquals(StatusBooking.STATUS_CHECKED_IN, result.get(2));
-    }
-
-    @Test
-    void getAllAvailableStatuses_whenBookingCancelledStatusAndStartDateInFutureAndEndDateInFuture_thenReturnedListOfStatuses() {
-        booking.setStatus(StatusBooking.STATUS_CANCELLED);
-        booking.setCheckInDate(futureDate);
-        booking.setCheckOutDate(futureDate);
-        when(entityService.getUserIfExists(anyLong())).thenReturn(boss);
-        when(entityService.getBookingIfExists(anyLong())).thenReturn(booking);
-
-        List<StatusBooking> result = bookingService.getAllAvailableStatuses(boss.getId(), booking.getId(), checkDate);
-
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(2, result.size());
-        Assertions.assertEquals(StatusBooking.STATUS_INITIAL, result.get(0));
-        Assertions.assertEquals(StatusBooking.STATUS_CONFIRMED, result.get(1));
     }
 }

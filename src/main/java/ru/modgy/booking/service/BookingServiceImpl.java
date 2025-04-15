@@ -36,10 +36,11 @@ public class BookingServiceImpl implements BookingService {
     private final OwnerMapper ownerMapper;
     private final EntityService entityService;
     private final UtilityService utilityService;
+    private final BookingStatusService statusService;
 
     @Transactional
     @Override
-    public BookingDto addBooking(Long userId, NewBookingDto newBookingDto) {
+    public BookingDto addBooking(NewBookingDto newBookingDto) {
         utilityService.checkDatesOfBooking(newBookingDto.getCheckInDate(), newBookingDto.getCheckOutDate());
         checkReasonWhenTypeClosing(newBookingDto.getType(), newBookingDto.getReasonOfStop());
         checkRoomAvailabilityByDates(
@@ -71,22 +72,22 @@ public class BookingServiceImpl implements BookingService {
         List<PetDto> petDtoList = addPetsDtoListForOwner(pets, bookingDto);
 
         bookingDto.setPets(petDtoList);
-        log.info("BookingService: addBooking, userId={}, bookingDto={}", userId, addedBooking);
+        log.info("BookingService: addBooking, bookingDto={}", addedBooking);
         return bookingDto;
     }
 
     @Transactional(readOnly = true)
     @Override
-    public BookingDto getBookingById(Long userId, Long bookingId) {
+    public BookingDto getBookingById(Long bookingId) {
         Booking booking = entityService.getBookingIfExists(bookingId);
         BookingDto bookingDto = addOwnerShortDtoInPetDto(booking);
-        log.info("BookingService: getBookingById, userId={}, bookingId={}", userId, bookingId);
+        log.info("BookingService: getBookingById, bookingId={}", bookingId);
         return bookingDto;
     }
 
     @Transactional
     @Override
-    public BookingDto updateBooking(Long userId, Long bookingId, UpdateBookingDto updateBookingDto) {
+    public BookingDto updateBooking(Long bookingId, LocalDate today, UpdateBookingDto updateBookingDto) {
         Booking oldBooking = entityService.getBookingIfExists(bookingId);
         Booking newBooking = bookingMapper.toBooking(updateBookingDto);
         newBooking.setId(oldBooking.getId());
@@ -160,11 +161,16 @@ public class BookingServiceImpl implements BookingService {
             newBooking.setPets(pets);
         }
 
-        if (newBooking.getStatus().equals(StatusBooking.STATUS_INITIAL) && newBooking.getIsPrepaid()) {
+        utilityService.checkDatesOfBooking(newBooking.getCheckInDate(), newBooking.getCheckOutDate());
+        statusService.checkChangeStatusRestrictions(oldBooking.getStatus(), newBooking, today);
+        checkUpdateBookingRoomAvailableByDates(
+                newBooking.getRoom().getId(),
+                newBooking.getId(),
+                newBooking.getCheckInDate(),
+                newBooking.getCheckOutDate());
+        if (newBooking.getIsPrepaid() && newBooking.getStatus().equals(StatusBooking.STATUS_INITIAL)) {
             newBooking.setStatus(StatusBooking.STATUS_CONFIRMED);
         }
-
-        utilityService.checkDatesOfBooking(newBooking.getCheckInDate(), newBooking.getCheckOutDate());
 
         Booking updatedBooking = bookingRepository.save(newBooking);
 
@@ -177,27 +183,26 @@ public class BookingServiceImpl implements BookingService {
         List<PetDto> petDtoList = addPetsDtoListForOwner(pets, updatedBookingDto);
 
         updatedBookingDto.setPets(petDtoList);
-        log.info("BookingService: updateBooking, userId={}, bookingId={}, updateBookingDto={}",
-                userId, bookingId, updateBookingDto);
+        log.info("BookingService: updateBooking, bookingId={}, updateBookingDto={}",
+               bookingId, updateBookingDto);
         return updatedBookingDto;
     }
 
     @Transactional
     @Override
-    public void deleteBookingById(Long userId, Long bookingId) {
+    public void deleteBookingById(Long bookingId) {
         int result = bookingRepository.deleteBookingById(bookingId);
 
         if (result == 0) {
             throw new NotFoundException(String.format("booking with id=%d not found", bookingId));
         }
 
-        log.info("BookingService: deleteBookingById, userId={}, bookingId={}", userId, bookingId);
+        log.info("BookingService: deleteBookingById, bookingId={}", bookingId);
     }
 
     @Transactional(readOnly = true)
     @Override
-    public List<BookingDto> findCrossingBookingsForRoomInDates(Long userId,
-                                                               Long roomId,
+    public List<BookingDto> findCrossingBookingsForRoomInDates(Long roomId,
                                                                LocalDate checkInDate,
                                                                LocalDate checkOutDate) {
         utilityService.checkDatesOfBooking(checkInDate, checkOutDate);
@@ -207,43 +212,40 @@ public class BookingServiceImpl implements BookingService {
 
         List<BookingDto> bookingDtoList = addOwnerShortDtoInPetDtoList(foundBookings);
 
-        log.info("BookingService: findCrossingBookingsForRoomInDates, userId={}, roomId={}, checkInDate={}, checkOutDate={}",
-                userId, roomId, checkInDate, checkOutDate);
+        log.info("BookingService: findCrossingBookingsForRoomInDates, roomId={}, checkInDate={}, checkOutDate={}",
+                roomId, checkInDate, checkOutDate);
         return bookingDtoList;
     }
 
     @Transactional(readOnly = true)
     @Override
-    public void checkRoomAvailableInDates(Long userId,
-                                          Long roomId,
+    public void checkRoomAvailableInDates(Long roomId,
                                           LocalDate checkInDate,
                                           LocalDate checkOutDate) {
         utilityService.checkDatesOfBooking(checkInDate, checkOutDate);
         entityService.getRoomIfExists(roomId);
-        log.info("BookingService: checkRoomAvailableInDates, userId={}, roomId={}, checkInDate={}, checkOutDate={}",
-                userId, roomId, checkInDate, checkOutDate);
+        log.info("BookingService: checkRoomAvailableInDates, roomId={}, checkInDate={}, checkOutDate={}",
+                roomId, checkInDate, checkOutDate);
         checkRoomAvailabilityByDates(roomId, checkInDate, checkOutDate);
     }
 
     @Transactional(readOnly = true)
     @Override
-    public void checkUpdateBookingRoomAvailableInDates(Long userId,
-                                                       Long roomId,
+    public void checkUpdateBookingRoomAvailableInDates(Long roomId,
                                                        Long bookingId,
                                                        LocalDate checkInDate,
                                                        LocalDate checkOutDate) {
         utilityService.checkDatesOfBooking(checkInDate, checkOutDate);
         entityService.getBookingIfExists(bookingId);
         entityService.getRoomIfExists(roomId);
-        log.info("BookingService: checkUpdateRoomAvailableInDates, userId={}, roomId={}, checkInDate={}, checkOutDate={}",
-                userId, roomId, checkInDate, checkOutDate);
-        checkUpdateBookingRoomAvailableInDates(roomId, bookingId, checkInDate, checkOutDate);
+        log.info("BookingService: checkUpdateRoomAvailableInDates, roomId={}, checkInDate={}, checkOutDate={}",
+                roomId, checkInDate, checkOutDate);
+        checkUpdateBookingRoomAvailableByDates(roomId, bookingId, checkInDate, checkOutDate);
     }
 
     @Transactional(readOnly = true)
     @Override
-    public List<BookingDto> findBlockingBookingsForRoomInDates(Long userId,
-                                                               Long roomId,
+    public List<BookingDto> findBlockingBookingsForRoomInDates(Long roomId,
                                                                LocalDate checkInDate,
                                                                LocalDate checkOutDate) {
         utilityService.checkDatesOfBooking(checkInDate, checkOutDate);
@@ -252,62 +254,54 @@ public class BookingServiceImpl implements BookingService {
 
         List<BookingDto> bookingDtoList = addOwnerShortDtoInPetDtoList(foundBookings);
 
-        log.info("BookingService: findBlockingBookingsForRoomInDates, userId={}, roomId={}, checkInDate={}, checkOutDate={}",
-                userId, roomId, checkInDate, checkOutDate);
+        log.info("BookingService: findBlockingBookingsForRoomInDates, roomId={}, checkInDate={}, checkOutDate={}",
+                roomId, checkInDate, checkOutDate);
         return bookingDtoList;
     }
 
     @Transactional(readOnly = true)
     @Override
-    public List<BookingDto> findAllBookingsInDates(Long userId, LocalDate startDate, LocalDate endDate) {
+    public List<BookingDto> findAllBookingsInDates(LocalDate startDate, LocalDate endDate) {
         utilityService.checkDatesOfBooking(startDate, endDate);
         List<Booking> foundBookings = bookingRepository.findAllBookingsInDates(startDate, endDate)
                 .orElse(Collections.emptyList());
 
         List<BookingDto> bookingDtoList = addOwnerShortDtoInPetDtoList(foundBookings);
 
-        log.info("BookingService: findAllBookingsInDates, userId={}, startDate={}, endDate={}",
-                userId, startDate, endDate);
+        log.info("BookingService: findAllBookingsInDates, startDate={}, endDate={}",
+                startDate, endDate);
         return bookingDtoList;
     }
 
     @Transactional(readOnly = true)
     @Override
-    public List<BookingDto> findAllBookingsByPet(Long userId, Long petId) {
+    public List<BookingDto> findAllBookingsByPet(Long petId) {
         entityService.getPetIfExists(petId);
         List<Booking> foundBookings = bookingRepository.findAllBookingsByPet(petId).orElse(Collections.emptyList());
         List<BookingDto> bookingDtoList = addOwnerShortDtoInPetDtoList(foundBookings);
 
-        log.info("BookingService: findAllBookingsByPet, userId={}, petId={}", userId, petId);
+        log.info("BookingService: findAllBookingsByPet, petId={}", petId);
         return bookingDtoList;
     }
 
     @Transactional(readOnly = true)
     @Override
-    public List<BookingDto> findAllBookingsByOwner(Long userId, Long ownerId) {
+    public List<BookingDto> findAllBookingsByOwner(Long ownerId) {
         entityService.getOwnerIfExists(ownerId);
         List<Booking> foundBookings = bookingRepository.findAllBookingsByOwner(ownerId).orElse(Collections.emptyList());
         List<BookingDto> bookingDtoList = addOwnerShortDtoInPetDtoList(foundBookings);
 
-        log.info("BookingService: findAllBookingsByOwner, userId={}, petId={}", userId, ownerId);
+        log.info("BookingService: findAllBookingsByOwner, petId={}", ownerId);
         return bookingDtoList;
     }
 
     @Transactional(readOnly = true)
     @Override
-    public List<StatusBooking> getAllAvailableStatuses(Long userId, Long bookingId, LocalDate today) {
+    public List<StatusBooking> getAllAvailableStatuses(Long bookingId, LocalDate date) {
         Booking booking = entityService.getBookingIfExists(bookingId);
-        if (booking.getStatus().equals(StatusBooking.STATUS_INITIAL)) {
-            return getStatusesForInitialBooking(booking, today);
-        } else if (booking.getStatus().equals(StatusBooking.STATUS_CONFIRMED)) {
-            return getStatusesForConfirmedBooking(booking, today);
-        } else if (booking.getStatus().equals(StatusBooking.STATUS_CHECKED_IN)) {
-            return getStatusesForCheckedInBooking(booking, today);
-        } else if (booking.getStatus().equals(StatusBooking.STATUS_CHECKED_OUT)) {
-            return getStatusesForCheckedOutBooking(booking, today);
-        } else {
-            return getStatusesForCancelledBooking(booking, today);
-        }
+
+        log.info("BookingService: getAllAvailableStatuses, bookingId={}, date={}", bookingId, date);
+        return statusService.getAllAvailableStatuses(booking, date);
     }
 
     private List<Booking> findBookingsForRoomInDates(Long roomId, LocalDate checkInDate, LocalDate checkOutDate) {
@@ -325,7 +319,7 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private void checkUpdateBookingRoomAvailableInDates(Long roomId,
+    private void checkUpdateBookingRoomAvailableByDates(Long roomId,
                                                         Long bookingId,
                                                         LocalDate checkInDate,
                                                         LocalDate checkOutDate) {
@@ -403,92 +397,5 @@ public class BookingServiceImpl implements BookingService {
             petDto.setOwnerShortDto(ownerMapper.toOwnerShortDto(owners.get(petDto.getId())));
         }
         return petsDto;
-    }
-
-    private List<StatusBooking> getStatusesForInitialBooking(Booking booking, LocalDate date) {
-        List<StatusBooking> result = new ArrayList<>();
-        result.add(StatusBooking.STATUS_CONFIRMED);
-        result.add(StatusBooking.STATUS_CANCELLED);
-
-        if (booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isBefore(date)) {
-            result.add(StatusBooking.STATUS_CHECKED_OUT);
-        } else if ((booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isEqual(date)) ||
-                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isEqual(date)) ||
-                (booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isAfter(date)) ||
-                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isAfter(date)) ||
-                (booking.getCheckInDate().isAfter(date) && booking.getCheckOutDate().isAfter(date))) {
-            result.add(StatusBooking.STATUS_CHECKED_IN);
-        }
-        return result;
-    }
-
-    private List<StatusBooking> getStatusesForConfirmedBooking(Booking booking, LocalDate date) {
-        List<StatusBooking> result = new ArrayList<>();
-        result.add(StatusBooking.STATUS_INITIAL);
-        result.add(StatusBooking.STATUS_CANCELLED);
-
-        if (booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isBefore(date)) {
-            result.add(StatusBooking.STATUS_CHECKED_OUT);
-        } else if ((booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isEqual(date)) ||
-                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isEqual(date)) ||
-                (booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isAfter(date)) ||
-                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isAfter(date)) ||
-                (booking.getCheckInDate().isAfter(date) && booking.getCheckOutDate().isAfter(date))) {
-            result.add(StatusBooking.STATUS_CHECKED_IN);
-        }
-        return result;
-    }
-
-    private List<StatusBooking> getStatusesForCheckedInBooking(Booking booking, LocalDate date) {
-        List<StatusBooking> result = new ArrayList<>();
-
-        if (booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isBefore(date)) {
-            result.add(StatusBooking.STATUS_CHECKED_OUT);
-            result.add(StatusBooking.STATUS_CANCELLED);
-        } else if ((booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isEqual(date)) ||
-                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isEqual(date)) ||
-                (booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isAfter(date)) ||
-                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isAfter(date))) {
-            result.add(StatusBooking.STATUS_INITIAL);
-            result.add(StatusBooking.STATUS_CONFIRMED);
-            result.add(StatusBooking.STATUS_CHECKED_OUT);
-            result.add(StatusBooking.STATUS_CANCELLED);
-        }
-        return result;
-    }
-
-    private List<StatusBooking> getStatusesForCheckedOutBooking(Booking booking, LocalDate date) {
-        List<StatusBooking> result = new ArrayList<>();
-
-        if ((booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isBefore(date)) ||
-                (booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isEqual(date)) ||
-                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isEqual(date))) {
-            result.add(StatusBooking.STATUS_CANCELLED);
-            result.add(StatusBooking.STATUS_CHECKED_IN);
-        }
-        return result;
-    }
-
-    private List<StatusBooking> getStatusesForCancelledBooking(Booking booking, LocalDate date) {
-        List<StatusBooking> result = new ArrayList<>();
-
-        if (booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isBefore(date)) {
-            result.add(StatusBooking.STATUS_CHECKED_OUT);
-        } else if ((booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isEqual(date)) ||
-                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isEqual(date))) {
-            result.add(StatusBooking.STATUS_INITIAL);
-            result.add(StatusBooking.STATUS_CONFIRMED);
-            result.add(StatusBooking.STATUS_CHECKED_IN);
-            result.add(StatusBooking.STATUS_CHECKED_OUT);
-        } else if (booking.getCheckInDate().isAfter(date) && booking.getCheckOutDate().isAfter(date)) {
-            result.add(StatusBooking.STATUS_INITIAL);
-            result.add(StatusBooking.STATUS_CONFIRMED);
-        } else if ((booking.getCheckInDate().isBefore(date) && booking.getCheckOutDate().isAfter(date)) ||
-                (booking.getCheckInDate().isEqual(date) && booking.getCheckOutDate().isAfter(date))) {
-            result.add(StatusBooking.STATUS_INITIAL);
-            result.add(StatusBooking.STATUS_CONFIRMED);
-            result.add(StatusBooking.STATUS_CHECKED_IN);
-        }
-        return result;
     }
 }

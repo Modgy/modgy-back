@@ -217,7 +217,7 @@ class RoomServiceIntegrationTest {
         em.persist(category);
         em.persist(room);
 
-        String roomNumber = "1F";
+        String roomNumber = "uniqueRoomNumber";
         boolean result = roomService.checkUniqueRoomNumber(requesterAdmin.getId(), roomNumber);
 
         assertTrue(result);

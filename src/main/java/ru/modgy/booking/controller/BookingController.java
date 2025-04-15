@@ -33,7 +33,7 @@ public class BookingController {
         utilityService.checkBossAdminAccess(requesterId);
         log.info("BookingController: POST/addBooking, requesterId={}, booking={}", requesterId, newBookingDto);
         utilityService.checkBossAdminAccess(requesterId);
-        return bookingService.addBooking(requesterId, newBookingDto);
+        return bookingService.addBooking(newBookingDto);
     }
 
     @GetMapping("/{id}")
@@ -42,18 +42,19 @@ public class BookingController {
         utilityService.checkBossAdminAccess(requesterId);
         log.info("BookingController: GET/getBookingById, requesterId={}, bookingId={}", requesterId, bookingId);
         utilityService.checkBossAdminAccess(requesterId);
-        return bookingService.getBookingById(requesterId, bookingId);
+        return bookingService.getBookingById(bookingId);
     }
 
     @PatchMapping("/{id}")
     public BookingDto updateBooking(@RequestHeader(UtilityService.REQUESTER_ID_HEADER) Long requesterId,
                                     @RequestBody @Valid UpdateBookingDto updateBookingDto,
-                                    @PathVariable("id") Long bookingId) {
+                                    @PathVariable("id") Long bookingId,
+                                    @RequestParam(value = "date", required = false) @DateTimeFormat(pattern = "dd.MM.yyyy") Optional<LocalDate> date) {
         utilityService.checkBossAdminAccess(requesterId);
         log.info("BookingController: PATCH/updateBooking, requesterId={}, bookingId={}, requestBody={}",
                 requesterId, bookingId, updateBookingDto);
         utilityService.checkBossAdminAccess(requesterId);
-        return bookingService.updateBooking(requesterId, bookingId, updateBookingDto);
+        return bookingService.updateBooking(bookingId, date.orElseGet(LocalDate::now), updateBookingDto);
     }
 
     @DeleteMapping("/{id}")
@@ -63,7 +64,7 @@ public class BookingController {
         utilityService.checkBossAdminAccess(requesterId);
         log.info("BookingController: DELETE/deleteBookingById, requesterId={}, bookingId={}", requesterId, bookingId);
         utilityService.checkBossAdminAccess(requesterId);
-        bookingService.deleteBookingById(requesterId, bookingId);
+        bookingService.deleteBookingById(bookingId);
     }
 
     @GetMapping("/rooms/{roomId}/crossingBookingsOfRoomInDates")
@@ -73,7 +74,7 @@ public class BookingController {
                                                                @RequestParam("checkOutDate") @DateTimeFormat(pattern = "dd.MM.yyyy") LocalDate checkOutDate) {
         log.info("BookingController: GET/findBookingsForRoomInDates, requesterId={}, roomId={}", requesterId, roomId);
         utilityService.checkBossAdminAccess(requesterId);
-        return bookingService.findCrossingBookingsForRoomInDates(requesterId, roomId, checkInDate, checkOutDate);
+        return bookingService.findCrossingBookingsForRoomInDates(roomId, checkInDate, checkOutDate);
     }
 
     @GetMapping("/rooms/{roomId}/checkRoomAvailable")
@@ -83,7 +84,7 @@ public class BookingController {
                                           @RequestParam("checkOutDate") @DateTimeFormat(pattern = "dd.MM.yyyy") LocalDate checkOutDate) {
         log.info("BookingController: GET/checkRoomAvailableInDates, requesterId={}, roomId={}", requesterId, roomId);
         utilityService.checkBossAdminAccess(requesterId);
-        bookingService.checkRoomAvailableInDates(requesterId, roomId, checkInDate, checkOutDate);
+        bookingService.checkRoomAvailableInDates(roomId, checkInDate, checkOutDate);
     }
 
     @GetMapping("/{bookingId}/rooms/{roomId}/checkUpdateRoomAvailable")
@@ -94,7 +95,7 @@ public class BookingController {
                                                        @RequestParam("checkOutDate") @DateTimeFormat(pattern = "dd.MM.yyyy") LocalDate checkOutDate) {
         log.info("BookingController: GET/checkUpdateRoomAvailableInDates, requesterId={}, roomId={}, bookingId={}", requesterId, roomId, bookingId);
         utilityService.checkBossAdminAccess(requesterId);
-        bookingService.checkUpdateBookingRoomAvailableInDates(requesterId, roomId, bookingId, checkInDate, checkOutDate);
+        bookingService.checkUpdateBookingRoomAvailableInDates(roomId, bookingId, checkInDate, checkOutDate);
     }
 
     @GetMapping("/rooms/{roomId}/blockingBookingsInDates")
@@ -104,7 +105,7 @@ public class BookingController {
                                                                @RequestParam("checkOutDate") @DateTimeFormat(pattern = "dd.MM.yyyy") LocalDate checkOutDate) {
         log.info("BookingController: GET/findBlockingBookingsForRoomInDates, requesterId={}, roomId={}", requesterId, roomId);
         utilityService.checkBossAdminAccess(requesterId);
-        return bookingService.findBlockingBookingsForRoomInDates(requesterId, roomId, checkInDate, checkOutDate);
+        return bookingService.findBlockingBookingsForRoomInDates(roomId, checkInDate, checkOutDate);
     }
 
     @GetMapping("/inDates")
@@ -113,7 +114,7 @@ public class BookingController {
                                                    @RequestParam("endDate") @DateTimeFormat(pattern = "dd.MM.yyyy") LocalDate endDate) {
         log.info("BookingController: GET/findAllBookingsInDates, requesterId={}", requesterId);
         utilityService.checkBossAdminAccess(requesterId);
-        return bookingService.findAllBookingsInDates(requesterId, startDate, endDate);
+        return bookingService.findAllBookingsInDates(startDate, endDate);
     }
 
     @GetMapping("/allByPet/pets/{petId}")
@@ -121,7 +122,7 @@ public class BookingController {
                                                  @PathVariable("petId") Long petId) {
         log.info("BookingController: GET/findAllBookingsByPet, requesterId={}, petId={}", requesterId, petId);
         utilityService.checkBossAdminAccess(requesterId);
-        return bookingService.findAllBookingsByPet(requesterId, petId);
+        return bookingService.findAllBookingsByPet(petId);
     }
 
     @GetMapping("/allByOwner/owners/{ownerId}")
@@ -129,7 +130,7 @@ public class BookingController {
                                                    @PathVariable("ownerId") Long ownerId) {
         log.info("BookingController: GET/findAllBookingsByOwner, requesterId={}, ownerId={}", requesterId, ownerId);
         utilityService.checkBossAdminAccess(requesterId);
-        return bookingService.findAllBookingsByOwner(requesterId, ownerId);
+        return bookingService.findAllBookingsByOwner(ownerId);
     }
 
     @GetMapping("/{bookingId}/availableStatus")
@@ -139,6 +140,6 @@ public class BookingController {
         log.info("BookingController: GET/getAllAvailableStatuses, requesterId={}, bookingId={}",
                 requesterId, bookingId);
         utilityService.checkBossAdminAccess(requesterId);
-        return bookingService.getAllAvailableStatuses(requesterId, bookingId, date.orElseGet(LocalDate::now));
+        return bookingService.getAllAvailableStatuses(bookingId, date.orElseGet(LocalDate::now));
     }
 }

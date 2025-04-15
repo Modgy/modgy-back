@@ -229,6 +229,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/requesterHeader'
         - $ref: '#/components/parameters/bookingId'
+        - $ref: '#/components/parameters/date'
       requestBody:
         content:
           application/json:
